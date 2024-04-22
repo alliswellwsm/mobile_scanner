@@ -17,14 +17,13 @@ import 'package:mobile_scanner/src/objects/start_options.dart';
 class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Construct a new [MobileScannerController] instance.
   MobileScannerController({
-    this.cameraResolution,
     this.detectionSpeed = DetectionSpeed.normal,
     int detectionTimeoutMs = 250,
     this.facing = CameraFacing.back,
     this.formats = const <BarcodeFormat>[],
     this.returnImage = false,
     this.torchEnabled = false,
-    this.useNewCameraSelector = false,
+    this.autoZoom = true,
   })  : detectionTimeoutMs =
             detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
         assert(
@@ -32,20 +31,6 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
           'The detection timeout must be greater than or equal to 0.',
         ),
         super(MobileScannerState.uninitialized(facing));
-
-  /// The desired resolution for the camera.
-  ///
-  /// When this value is provided, the camera will try to match this resolution,
-  /// or fallback to the closest available resolution.
-  /// When this is null, Android defaults to a resolution of 640x480.
-  ///
-  /// Bear in mind that changing the resolution has an effect on the aspect ratio.
-  ///
-  /// When the camera orientation changes,
-  /// the resolution will be flipped to match the new dimensions of the display.
-  ///
-  /// Currently only supported on Android.
-  final Size? cameraResolution;
 
   /// The detection speed for the scanner.
   ///
@@ -84,14 +69,8 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Defaults to false.
   final bool torchEnabled;
 
-  /// Use the new resolution selector.
-  ///
-  /// This feature is experimental and not fully tested yet.
-  /// Use caution when using this flag,
-  /// as the new resolution selector may produce unwanted or zoomed images.
-  ///
-  /// Only supported on Android.
-  final bool useNewCameraSelector;
+  /// Auto zoom for the scanner.
+  final bool autoZoom;
 
   /// The internal barcode controller, that listens for detected barcodes.
   final StreamController<BarcodeCapture> _barcodesController =
@@ -258,7 +237,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
 
     final StartOptions options = StartOptions(
       cameraDirection: effectiveDirection,
-      cameraResolution: cameraResolution,
+      autoZoom: autoZoom,
       detectionSpeed: detectionSpeed,
       detectionTimeoutMs: detectionTimeoutMs,
       formats: formats,

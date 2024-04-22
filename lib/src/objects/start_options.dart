@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
 import 'package:mobile_scanner/src/enums/detection_speed.dart';
@@ -8,7 +6,7 @@ import 'package:mobile_scanner/src/enums/detection_speed.dart';
 class StartOptions {
   const StartOptions({
     required this.cameraDirection,
-    required this.cameraResolution,
+    required this.autoZoom,
     required this.detectionSpeed,
     required this.detectionTimeoutMs,
     required this.formats,
@@ -19,8 +17,8 @@ class StartOptions {
   /// The direction for the camera.
   final CameraFacing cameraDirection;
 
-  /// The desired camera resolution for the scanner.
-  final Size? cameraResolution;
+  /// Auto zoom for the scanner
+  final bool autoZoom;
 
   /// The detection speed for the scanner.
   final DetectionSpeed detectionSpeed;
@@ -39,11 +37,7 @@ class StartOptions {
 
   Map<String, Object?> toMap() {
     return <String, Object?>{
-      if (cameraResolution != null)
-        'cameraResolution': <int>[
-          cameraResolution!.width.toInt(),
-          cameraResolution!.height.toInt(),
-        ],
+      'autoZoom': autoZoom,
       'facing': cameraDirection.rawValue,
       if (formats.isNotEmpty)
         'formats': formats.map((f) => f.rawValue).toList(),

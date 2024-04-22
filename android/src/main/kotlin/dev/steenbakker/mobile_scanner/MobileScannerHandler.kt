@@ -137,30 +137,14 @@ class MobileScannerHandler(
         val facing: Int = call.argument<Int>("facing") ?: 0
         val formats: List<Int>? = call.argument<List<Int>>("formats")
         val returnImage: Boolean = call.argument<Boolean>("returnImage") ?: false
+        val autoZoom: Boolean = call.argument<Boolean>("autoZoom") ?: false
         val speed: Int = call.argument<Int>("speed") ?: 1
         val timeout: Int = call.argument<Int>("timeout") ?: 250
-        val cameraResolutionValues: List<Int>? = call.argument<List<Int>>("cameraResolution")
-        val useNewCameraSelector: Boolean = call.argument<Boolean>("useNewCameraSelector") ?: false
-        val cameraResolution: Size? = if (cameraResolutionValues != null) {
-            Size(cameraResolutionValues[0], cameraResolutionValues[1])
-        } else {
-            null
-        }
 
-        var barcodeScannerOptions: BarcodeScannerOptions? = null
+        val formatsList: MutableList<Int> = mutableListOf()
         if (formats != null) {
-            val formatsList: MutableList<Int> = mutableListOf()
             for (formatValue in formats) {
                 formatsList.add(BarcodeFormats.fromRawValue(formatValue).intValue)
-            }
-            barcodeScannerOptions = if (formatsList.size == 1) {
-                BarcodeScannerOptions.Builder().setBarcodeFormats(formatsList.first())
-                    .build()
-            } else {
-                BarcodeScannerOptions.Builder().setBarcodeFormats(
-                    formatsList.first(),
-                    *formatsList.subList(1, formatsList.size).toIntArray()
-                ).build()
             }
         }
 
@@ -170,7 +154,8 @@ class MobileScannerHandler(
         val detectionSpeed: DetectionSpeed = DetectionSpeed.values().first { it.intValue == speed}
 
         mobileScanner!!.start(
-            barcodeScannerOptions,
+            formatsList,
+            autoZoom,
             returnImage,
             position,
             torch,
@@ -222,8 +207,6 @@ class MobileScannerHandler(
                 }
             },
             timeout.toLong(),
-            cameraResolution,
-            useNewCameraSelector
         )
     }
 
