@@ -61,6 +61,8 @@ class MobileScanner(
 
     private val debug: Boolean = BuildConfig.DEBUG
 
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+
     /**
      * callback for the camera. Every frame is passed through this function.
      */
@@ -156,7 +158,7 @@ class MobileScanner(
 
         if (detectionSpeed == DetectionSpeed.NORMAL) {
             // Set timer and continue
-            Handler(Looper.getMainLooper()).postDelayed({
+            mainHandler.postDelayed({
                 scannerTimeout = false
             }, detectionTimeout)
         }
