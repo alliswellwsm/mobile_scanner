@@ -17,7 +17,7 @@ import 'package:mobile_scanner/src/objects/start_options.dart';
 class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Construct a new [MobileScannerController] instance.
   MobileScannerController({
-    this.autoStart = false,
+    this.autoStart = true,
     this.detectionSpeed = DetectionSpeed.normal,
     int detectionTimeoutMs = 250,
     this.facing = CameraFacing.back,
