@@ -15,6 +15,7 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.TorchState
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -355,11 +356,23 @@ class MobileScanner(
                 TAG,
                 "camera: preview(${resolution}) analysis(${analysis.resolutionInfo?.resolution})"
             )
+
+            // Start with 'unavailable' torch state.
+            var currentTorchState: Int = -1
+
+            camera?.cameraInfo?.let {
+                if (!it.hasFlashUnit()) {
+                    return@let
+                }
+
+                currentTorchState = it.torchState.value ?: -1
+            }
+
             mobileScannerStartedCallback(
                 MobileScannerStartParameters(
                     if (portrait) width else height,
                     if (portrait) height else width,
-                    camera?.cameraInfo?.hasFlashUnit() ?: false,
+                    currentTorchState,
                     textureEntry!!.id(),
                     numberOfCameras ?: 0
                 )
@@ -394,13 +407,16 @@ class MobileScanner(
     /**
      * Toggles the flash light on or off.
      */
-    fun toggleTorch(enableTorch: Boolean) {
-        if (camera == null) {
-            return
-        }
+    fun toggleTorch() {
+        camera?.let {
+            if (!it.cameraInfo.hasFlashUnit()) {
+                return@let
+            }
 
-        if (camera?.cameraInfo?.hasFlashUnit() == true) {
-            camera?.cameraControl?.enableTorch(enableTorch)
+            when(it.cameraInfo.torchState.value) {
+                TorchState.OFF -> it.cameraControl.enableTorch(true)
+                TorchState.ON -> it.cameraControl.enableTorch(false)
+            }
         }
     }
 
