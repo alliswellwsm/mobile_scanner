@@ -143,7 +143,13 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
         return;
       }
 
-      cameraStateErrorCallback?.call(error);
+      if (error == 'ReceivedFirstFrame') {
+        if (!value.receivedFirstFrame) {
+          value = value.copyWith(receivedFirstFrame: true);
+        }
+      } else {
+        cameraStateErrorCallback?.call(error);
+      }
     });
   }
 

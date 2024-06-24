@@ -64,11 +64,18 @@ class MobileScanner(
 
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
+    private var receivedFirstFrame = false
+
     /**
      * callback for the camera. Every frame is passed through this function.
      */
     @ExperimentalGetImage
     val captureOutput = ImageAnalysis.Analyzer { imageProxy -> // YUV_420_888 format
+        if (!receivedFirstFrame) {
+            receivedFirstFrame = true
+            this.mobileScannerErrorCallback("ReceivedFirstFrame")
+        }
+
         val scanner = this.scanner
         val mediaImage = imageProxy.image
 

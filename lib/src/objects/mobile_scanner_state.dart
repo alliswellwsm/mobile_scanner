@@ -15,6 +15,7 @@ class MobileScannerState {
     required this.size,
     required this.torchState,
     required this.zoomScale,
+    required this.receivedFirstFrame,
     this.error,
   });
 
@@ -28,6 +29,7 @@ class MobileScannerState {
           size: Size.zero,
           torchState: TorchState.unavailable,
           zoomScale: 1.0,
+          receivedFirstFrame: false,
         );
 
   /// The number of available cameras.
@@ -60,6 +62,9 @@ class MobileScannerState {
   /// The current zoom scale of the camera.
   final double zoomScale;
 
+  /// camera receive first frame
+  final bool receivedFirstFrame;
+
   /// Create a copy of this state with the given parameters.
   MobileScannerState copyWith({
     int? availableCameras,
@@ -70,6 +75,7 @@ class MobileScannerState {
     Size? size,
     TorchState? torchState,
     double? zoomScale,
+    bool? receivedFirstFrame,
   }) {
     return MobileScannerState(
       availableCameras: availableCameras ?? this.availableCameras,
@@ -80,6 +86,7 @@ class MobileScannerState {
       size: size ?? this.size,
       torchState: torchState ?? this.torchState,
       zoomScale: zoomScale ?? this.zoomScale,
+      receivedFirstFrame: receivedFirstFrame ?? this.receivedFirstFrame,
     );
   }
 }
