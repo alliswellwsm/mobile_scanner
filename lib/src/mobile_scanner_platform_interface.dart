@@ -43,6 +43,11 @@ abstract class MobileScannerPlatform extends PlatformInterface {
     throw UnimplementedError('zoomScaleStateStream has not been implemented.');
   }
 
+  /// Get the stream of camera state error
+  Stream<String> get cameraStateErrorStream {
+    throw UnimplementedError('cameraStateErrorStream has not been implemented.');
+  }
+
   /// Analyze a local image file for barcodes.
   ///
   /// The [path] is the path to the file on disk.

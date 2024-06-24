@@ -13,6 +13,8 @@ import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/mobile_scanner_state.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 
+typedef CameraStateErrorCallback = void Function(String error);
+
 /// The controller for the [MobileScanner] widget.
 class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Construct a new [MobileScannerController] instance.
@@ -25,6 +27,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     this.returnImage = false,
     this.torchEnabled = false,
     this.autoZoom = true,
+    this.cameraStateErrorCallback,
   })  : detectionTimeoutMs =
             detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
         assert(
@@ -76,6 +79,9 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Auto zoom for the scanner.
   final bool autoZoom;
 
+  /// Detect Camera State Error
+  final CameraStateErrorCallback? cameraStateErrorCallback;
+
   /// The internal barcode controller, that listens for detected barcodes.
   final StreamController<BarcodeCapture> _barcodesController =
       StreamController.broadcast();
@@ -86,6 +92,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   StreamSubscription<BarcodeCapture?>? _barcodesSubscription;
   StreamSubscription<TorchState>? _torchStateSubscription;
   StreamSubscription<double>? _zoomScaleSubscription;
+  StreamSubscription<String>? _cameraStateErrorSubscription;
 
   bool _isDisposed = false;
 
@@ -93,10 +100,12 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     _barcodesSubscription?.cancel();
     _torchStateSubscription?.cancel();
     _zoomScaleSubscription?.cancel();
+    _cameraStateErrorSubscription?.cancel();
 
     _barcodesSubscription = null;
     _torchStateSubscription = null;
     _zoomScaleSubscription = null;
+    _cameraStateErrorSubscription = null;
   }
 
   void _setupListeners() {
@@ -125,6 +134,16 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       }
 
       value = value.copyWith(zoomScale: zoomScale);
+    });
+
+    _cameraStateErrorSubscription = MobileScannerPlatform
+        .instance.cameraStateErrorStream
+        .listen((String error) {
+      if (_isDisposed) {
+        return;
+      }
+
+      cameraStateErrorCallback?.call(error);
     });
   }
 

@@ -324,7 +324,13 @@ class MobileScanner(
                     preview,
                     analysis
                 )
+                camera?.cameraInfo?.cameraState?.observe(activity as LifecycleOwner) { cameraState ->
+                    if (cameraState.error?.code == androidx.camera.core.CameraState.ERROR_OTHER_RECOVERABLE_ERROR) {
+                        this.mobileScannerErrorCallback("Other recoverable error")
+                    }
+                }
             } catch (exception: Exception) {
+                exception.printStackTrace()
                 mobileScannerErrorCallback(NoCamera())
 
                 return@addListener
@@ -391,6 +397,7 @@ class MobileScanner(
 
         val owner = activity as LifecycleOwner
         camera?.cameraInfo?.torchState?.removeObservers(owner)
+        camera?.cameraInfo?.cameraState?.removeObservers(owner)
         cameraProvider?.unbindAll()
         textureEntry?.release()
         scanner?.close()
