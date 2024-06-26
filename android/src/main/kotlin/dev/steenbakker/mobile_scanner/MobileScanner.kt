@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.Surface
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraState
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -332,8 +333,42 @@ class MobileScanner(
                     analysis
                 )
                 camera?.cameraInfo?.cameraState?.observe(activity as LifecycleOwner) { cameraState ->
-                    if (cameraState.error?.code == androidx.camera.core.CameraState.ERROR_OTHER_RECOVERABLE_ERROR) {
-                        this.mobileScannerErrorCallback("Other recoverable error")
+                    if (debug) Log.d(TAG, "cameraState: $cameraState")
+
+                    cameraState.error?.let { error ->
+                        when (error.code) {
+                            CameraState.ERROR_STREAM_CONFIG -> {
+                                this.mobileScannerErrorCallback("${error.code}: Stream config error")
+                            }
+
+                            CameraState.ERROR_CAMERA_IN_USE -> {
+                                this.mobileScannerErrorCallback("${error.code}: Camera in use")
+                            }
+
+                            CameraState.ERROR_MAX_CAMERAS_IN_USE -> {
+                                this.mobileScannerErrorCallback("${error.code}: Max cameras in use")
+                            }
+
+                            CameraState.ERROR_OTHER_RECOVERABLE_ERROR -> {
+                                this.mobileScannerErrorCallback("${error.code}: Other recoverable error")
+                            }
+
+                            CameraState.ERROR_CAMERA_DISABLED -> {
+                                this.mobileScannerErrorCallback("${error.code}: Camera disabled")
+                            }
+
+                            CameraState.ERROR_CAMERA_FATAL_ERROR -> {
+                                this.mobileScannerErrorCallback("${error.code}: Fatal error")
+                            }
+
+                            CameraState.ERROR_DO_NOT_DISTURB_MODE_ENABLED -> {
+                                this.mobileScannerErrorCallback("${error.code}: Do not disturb mode enabled")
+                            }
+
+                            else -> {
+                                this.mobileScannerErrorCallback("${error.code}: Unknown error")
+                            }
+                        }
                     }
                 }
             } catch (exception: Exception) {
