@@ -16,6 +16,8 @@ typealias TorchModeChangeCallback = ((Int?) -> ())
 typealias ZoomScaleChangeCallback = ((Double?) -> ())
 
 public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, FlutterTexture {
+    static let MAX_SKIP_FRAME_COUNT = 6
+  
     /// Capture session of the camera
     var captureSession: AVCaptureSession?
 
@@ -60,6 +62,8 @@ public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     private var imagesCurrentlyBeingProcessed = false
     
     public var timeoutSeconds: Double = 0
+
+    private var skipFirstFrameCount = MAX_SKIP_FRAME_COUNT
 
     init(registry: FlutterTextureRegistry?, mobileScannerCallback: @escaping MobileScannerCallback, torchModeChangeCallback: @escaping TorchModeChangeCallback, zoomScaleChangeCallback: @escaping ZoomScaleChangeCallback) {
         self.registry = registry
@@ -130,6 +134,12 @@ public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             print("Failed to get image buffer from sample buffer.")
             return
         }
+      
+        if skipFirstFrameCount > 0 {
+          skipFirstFrameCount -= 1
+          return
+        }
+      
         latestBuffer = imageBuffer
         registry?.textureFrameAvailable(textureId)
         
@@ -177,6 +187,7 @@ public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             throw MobileScannerError.alreadyStarted
         }
 
+        skipFirstFrameCount = MobileScanner.MAX_SKIP_FRAME_COUNT
         barcodesString = nil
         scanner = barcodeScannerOptions != nil ? BarcodeScanner.barcodeScanner(options: barcodeScannerOptions!) : BarcodeScanner.barcodeScanner()
         captureSession = AVCaptureSession()
