@@ -16,7 +16,7 @@ typealias TorchModeChangeCallback = ((Int?) -> ())
 typealias ZoomScaleChangeCallback = ((Double?) -> ())
 
 public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, FlutterTexture {
-    static let MAX_SKIP_FRAME_COUNT = 6
+    static let MAX_SKIP_FRAME_COUNT = 10
   
     /// Capture session of the camera
     var captureSession: AVCaptureSession?
