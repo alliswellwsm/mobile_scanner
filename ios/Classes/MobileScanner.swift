@@ -16,7 +16,7 @@ typealias TorchModeChangeCallback = ((Int?) -> ())
 typealias ZoomScaleChangeCallback = ((Double?) -> ())
 
 public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, FlutterTexture {
-    static let MAX_SKIP_FRAME_COUNT = 48
+    static let MAX_SKIP_FRAME_COUNT = 36
   
     /// Capture session of the camera
     var captureSession: AVCaptureSession?
@@ -135,13 +135,13 @@ public class MobileScanner: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             return
         }
       
-        if skipFirstFrameCount > 0 {
-          skipFirstFrameCount -= 1
-          return
-        }
-      
         latestBuffer = imageBuffer
         registry?.textureFrameAvailable(textureId)
+
+        if skipFirstFrameCount > 0 {
+            skipFirstFrameCount -= 1
+            return
+        }
         
         let currentTime = Date().timeIntervalSince1970
         let eligibleForScan = currentTime > nextScanTime && !imagesCurrentlyBeingProcessed
