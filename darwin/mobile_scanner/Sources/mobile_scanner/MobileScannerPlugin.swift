@@ -457,7 +457,43 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         // Add video output
         let videoOutput = AVCaptureVideoDataOutput()
-        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        
+        // Fix for iPhone 17: Check available pixel formats before setting
+        // Issue: https://github.com/juliansteenbakker/mobile_scanner/issues/1578
+        
+        // Define preferred pixel formats in order of preference
+        let preferredFormats: [OSType] = [
+            kCVPixelFormatType_32BGRA,
+            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        ]
+        
+        // Get available formats and convert from NSNumber to OSType
+        let availableFormats = videoOutput.availableVideoPixelFormatTypes
+        let availablePixelFormats = availableFormats.compactMap { ($0 as NSNumber).uint32Value }
+        
+        // Find the first preferred format that is available
+        var selectedFormat: OSType?
+        for format in preferredFormats {
+            if availablePixelFormats.contains(format) {
+                selectedFormat = format
+                break
+            }
+        }
+        
+        // Fallback: use first available format if no preferred format found
+        if selectedFormat == nil, let firstAvailable = availablePixelFormats.first {
+            selectedFormat = firstAvailable
+        }
+        
+        // Apply the selected format or fallback to the old default
+        if let format = selectedFormat {
+            videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
+        } else {
+            // Ultimate fallback: use the original default format
+            videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        }
+        
         videoOutput.alwaysDiscardsLateVideoFrames = true
 
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
