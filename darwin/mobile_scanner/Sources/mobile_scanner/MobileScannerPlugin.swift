@@ -455,17 +455,15 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         }
         captureSession!.sessionPreset = AVCaptureSession.Preset.high
 
-        // Add video output
         let videoOutput = AVCaptureVideoDataOutput()
-        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
-        videoOutput.alwaysDiscardsLateVideoFrames = true
 
+        let format = getPreferredVideoFormat(videoOutput: videoOutput)
+        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
+        videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
         captureSession!.addOutput(videoOutput)
         let deviceVideoOrientation = self.getVideoOrientation()
-        
 
-        // Adjust orientation for the video connection
         if let connection = videoOutput.connections.first {
             if connection.isVideoOrientationSupported {
                 connection.videoOrientation = deviceVideoOrientation
@@ -478,7 +476,6 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         captureSession!.commitConfiguration()
 
-        // Move startRunning to a background thread to avoid blocking the main UI thread.
         DispatchQueue.global(qos: .background).async {
             self.captureSession!.startRunning()
 
@@ -491,12 +488,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                     dimensions = CMVideoDimensions()
                 }
 
-                // Turn on the torch if requested.
                 if (torch) {
                     self.turnTorchOn()
                 }
                 
-                // Set the initial zoom factor
                 if (initialZoom != nil) {
                     do {
                         try self.setScaleInternal(initialZoom!)
@@ -541,6 +536,34 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 result(answer)
             }
         }
+    }
+
+    /// Get the preferred video format for the given video output.
+    private func getPreferredVideoFormat(videoOutput: AVCaptureVideoDataOutput) -> OSType {
+        // Define preferred pixel formats in order of preference
+        let preferredFormats: [OSType] = [
+            kCVPixelFormatType_32BGRA,
+            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        ]
+        
+        // Get available formats and convert from NSNumber to OSType
+        let availableFormats = videoOutput.availableVideoPixelFormatTypes
+        let availablePixelFormats = availableFormats.compactMap { ($0 as NSNumber).uint32Value }
+        
+        // Find the first preferred format that is available
+        for format in preferredFormats {
+            if availablePixelFormats.contains(format) {
+                return format
+            }
+        }
+        
+        if let firstAvailable = availablePixelFormats.first {
+            return firstAvailable
+        }
+        
+        // Ultimate fallback: use the original default format
+        return kCVPixelFormatType_32BGRA
     }
 
     /// Turn the torch on.
