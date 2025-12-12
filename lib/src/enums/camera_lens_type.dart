@@ -24,16 +24,12 @@ enum CameraLensType {
   const CameraLensType(this.rawValue);
 
   factory CameraLensType.fromRawValue(int? value) {
-    switch (value) {
-      case 0:
-        return normal;
-      case 1:
-        return wide;
-      case 2:
-        return zoom;
-      default:
-        return any;
-    }
+    return switch (value) {
+      0 => normal,
+      1 => wide,
+      2 => zoom,
+      _ => any,
+    };
   }
 
   /// The raw value for the camera lens type.
