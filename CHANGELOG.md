@@ -1,3 +1,7 @@
+### 7.1.4
+
+* [Apple] Fixed crash on iPhone 17 when starting MobileScanner by checking available pixel formats before setting video output settings. ([#1578](https://github.com/juliansteenbakker/mobile_scanner/issues/1578))
+
 ### 7.1.3
 
 * Overlay: Updated `BarcodePainter` to receive `deviceOrientation` and dynamically adjust `cameraPreviewSize`, fixing barcode overlay misalignment during device rotation changes [](https://github.com/juliansteenbakker/mobile_scanner/issues/1462).
