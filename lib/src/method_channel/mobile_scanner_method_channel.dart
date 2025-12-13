@@ -44,11 +44,11 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
   /// The name of the method that gets the camera authorization state.
   @visibleForTesting
-  static const String kStateMethodName = 'state';
+  static const String kAuthorizationStateMethodName = 'state';
 
   /// The name of the method that requests camera permissions.
   @visibleForTesting
-  static const String kRequestMethodName = 'request';
+  static const String kRequestAuthorizationMethodName = 'request';
 
   /// The name of the method that analyzes an image for barcodes.
   @visibleForTesting
@@ -68,15 +68,15 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
   /// The name of the method that starts the camera.
   @visibleForTesting
-  static const String kStartMethodName = 'start';
+  static const String kStartCameraMethodName = 'start';
 
   /// The name of the method that stops the camera.
   @visibleForTesting
-  static const String kStopMethodName = 'stop';
+  static const String kStopCameraMethodName = 'stop';
 
   /// The name of the method that pauses the camera.
   @visibleForTesting
-  static const String kPauseMethodName = 'pause';
+  static const String kPauseCameraMethodName = 'pause';
 
   /// The name of the method that toggles the torch.
   @visibleForTesting
@@ -194,7 +194,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   Future<void> _requestCameraPermission() async {
     try {
       final authorizationState = MobileScannerAuthorizationState.fromRawValue(
-        await methodChannel.invokeMethod<int>(kStateMethodName) ?? 0,
+        await methodChannel.invokeMethod<int>(kAuthorizationStateMethodName) ?? 0,
       );
 
       switch (authorizationState) {
@@ -206,7 +206,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
         case MobileScannerAuthorizationState.denied:
         case MobileScannerAuthorizationState.undetermined:
           final permissionGranted =
-              await methodChannel.invokeMethod<bool>(kRequestMethodName) ??
+              await methodChannel.invokeMethod<bool>(kRequestAuthorizationMethodName) ??
               false;
 
           if (!permissionGranted) {
@@ -359,7 +359,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     try {
       startResult = await methodChannel.invokeMapMethod<String, Object?>(
-        kStartMethodName,
+        kStartCameraMethodName,
         startOptions.toMap(),
       );
     } on PlatformException catch (error) {
@@ -455,7 +455,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     _eventsStream = null;
     _deviceOrientationStream = null;
 
-    await methodChannel.invokeMethod<void>(kStopMethodName, {'force': force});
+    await methodChannel.invokeMethod<void>(kStopCameraMethodName, {'force': force});
   }
 
   @override
@@ -466,7 +466,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     _pausing = true;
 
-    await methodChannel.invokeMethod<void>(kPauseMethodName, {'force': force});
+    await methodChannel.invokeMethod<void>(kPauseCameraMethodName, {'force': force});
   }
 
   @override
