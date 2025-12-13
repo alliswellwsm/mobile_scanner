@@ -121,7 +121,7 @@ abstract class MobileScannerPlatform extends PlatformInterface {
   /// Get the set of supported camera lens types for the current device.
   ///
   /// Returns a set of [CameraLensType] values that are available on the
-  /// device. Using a set ensures no duplicate lens types are returned.
+  /// device.
   ///
   /// Returns an empty set if the device has no cameras, or if the platform
   /// does not support querying available lens types.

@@ -594,8 +594,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   ///
   /// Returns a set of [CameraLensType] values that are available on the
   /// device. This can be used to determine which lens types can be used
-  /// with the scanner. Using a set ensures no duplicate lens types are
-  /// returned.
+  /// with the scanner.
   ///
   /// Returns an empty set if the device has no cameras, or if the platform
   /// does not support querying available lens types.
