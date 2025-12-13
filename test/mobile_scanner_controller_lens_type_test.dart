@@ -8,71 +8,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('MobileScannerController lens type tests', () {
-    test('controller initializes with default lens type (any)', () async {
+    test('controller initializes with default lens type (any)', () {
       final controller = MobileScannerController(autoStart: false);
 
       expect(controller.lensType, CameraLensType.any);
-
-      await controller.dispose();
     });
 
-    test('controller initializes with normal lens type', () async {
-      final controller = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.normal,
-      );
-
-      expect(controller.lensType, CameraLensType.normal);
-
-      await controller.dispose();
-    });
-
-    test('controller initializes with wide lens type', () async {
-      final controller = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.wide,
-      );
-
-      expect(controller.lensType, CameraLensType.wide);
-
-      await controller.dispose();
-    });
-
-    test('controller initializes with zoom lens type', () async {
-      final controller = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.zoom,
-      );
-
-      expect(controller.lensType, CameraLensType.zoom);
-
-      await controller.dispose();
-    });
-
-    test('different controllers can have different lens types', () async {
-      final normalController = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.normal,
-      );
-      final wideController = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.wide,
-      );
-      final zoomController = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.zoom,
-      );
-
-      expect(normalController.lensType, CameraLensType.normal);
-      expect(wideController.lensType, CameraLensType.wide);
-      expect(zoomController.lensType, CameraLensType.zoom);
-
-      await normalController.dispose();
-      await wideController.dispose();
-      await zoomController.dispose();
-    });
-
-    test('controller with all lens types can be created', () async {
+    test('controller can be created with all lens types', () {
       for (final lensType in CameraLensType.values) {
         final controller = MobileScannerController(
           autoStart: false,
@@ -80,23 +22,7 @@ void main() {
         );
 
         expect(controller.lensType, lensType);
-        await controller.dispose();
       }
-    });
-
-    test('lens type property is read-only and immutable', () async {
-      final controller = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.wide,
-      );
-
-      final initialLensType = controller.lensType;
-      expect(initialLensType, CameraLensType.wide);
-
-      // The lens type should remain the same (it's a final property)
-      expect(controller.lensType, initialLensType);
-
-      await controller.dispose();
     });
 
     test('getSupportedLenses throws when controller is disposed', () async {

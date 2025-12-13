@@ -25,14 +25,17 @@ void main() {
 
       final map = options.toMap();
 
-      expect(map['facing'], CameraFacing.back.rawValue);
-      expect(map['lensType'], CameraLensType.normal.rawValue);
-      expect(map['speed'], DetectionSpeed.normal.rawValue);
-      expect(map['timeout'], 250);
-      expect(map['returnImage'], false);
-      expect(map['torch'], false);
-      expect(map['invertImage'], false);
-      expect(map['autoZoom'], false);
+      expect(map, {
+        'facing': CameraFacing.back.rawValue,
+        'lensType': CameraLensType.normal.rawValue,
+        'speed': DetectionSpeed.normal.rawValue,
+        'timeout': 250,
+        'returnImage': false,
+        'torch': false,
+        'invertImage': false,
+        'autoZoom': false,
+        'initialZoom': null,
+      });
     });
 
     test('toMap includes camera resolution when provided', () {
@@ -119,14 +122,7 @@ void main() {
     });
 
     test('toMap correctly maps all lens types', () {
-      const lensTypes = [
-        CameraLensType.normal,
-        CameraLensType.wide,
-        CameraLensType.zoom,
-        CameraLensType.any,
-      ];
-
-      for (final lensType in lensTypes) {
+      for (final lensType in CameraLensType.values) {
         final options = StartOptions(
           cameraDirection: CameraFacing.back,
           cameraLensType: lensType,
@@ -174,13 +170,7 @@ void main() {
     });
 
     test('toMap handles all camera facing directions', () {
-      const facingDirections = [
-        CameraFacing.front,
-        CameraFacing.back,
-        CameraFacing.external,
-      ];
-
-      for (final facing in facingDirections) {
+      for (final facing in CameraFacing.values) {
         final options = StartOptions(
           cameraDirection: facing,
           cameraLensType: CameraLensType.any,
@@ -208,6 +198,7 @@ void main() {
     });
 
     test('toMap handles boolean flags correctly', () {
+      // Test representative combinations rather than all 16 permutations
       const testCases = [
         (returnImage: true, torch: true, invertImage: true, autoZoom: true),
         (returnImage: false, torch: false, invertImage: false, autoZoom: false),

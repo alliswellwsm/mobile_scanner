@@ -9,44 +9,30 @@ void main() {
 
   group('getSupportedLenses() tests', () {
     late MethodChannelMobileScanner platform;
-    late List<MethodCall> methodCalls;
+
+    void resetMethodCallHandler() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(platform.methodChannel, null);
+    }
 
     setUp(() {
       platform = MethodChannelMobileScanner();
       MobileScannerPlatform.instance = platform;
-      methodCalls = <MethodCall>[];
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            platform.methodChannel,
-            (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
-              switch (methodCall.method) {
-                case 'getSupportedLenses':
-                  // Return mock lens types based on test cases
-                  return null; // Will be overridden in specific tests
-                default:
-                  return null;
-              }
-            },
-          );
     });
 
-    tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(platform.methodChannel, null);
-    });
+    tearDown(resetMethodCallHandler);
 
     test('returns list of supported lenses', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [0, 1, 2]; // normal, wide, zoom
+                return [
+                  CameraLensType.normal.rawValue,
+                  CameraLensType.wide.rawValue,
+                  CameraLensType.zoom.rawValue,
+                ];
               }
               return null;
             },
@@ -65,10 +51,8 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [0]; // normal only
+                return [CameraLensType.normal.rawValue];
               }
               return null;
             },
@@ -85,10 +69,8 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [1]; // wide only
+                return [CameraLensType.wide.rawValue];
               }
               return null;
             },
@@ -105,10 +87,8 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [2]; // zoom only
+                return [CameraLensType.zoom.rawValue];
               }
               return null;
             },
@@ -125,8 +105,6 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
                 return null;
               }
@@ -144,8 +122,6 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
                 return <int>[];
               }
@@ -163,10 +139,14 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [0, 'invalid', 1, null, 2]; // Mixed valid and invalid
+                return [
+                  CameraLensType.normal.rawValue,
+                  'invalid',
+                  CameraLensType.wide.rawValue,
+                  null,
+                  CameraLensType.zoom.rawValue,
+                ];
               }
               return null;
             },
@@ -174,7 +154,6 @@ void main() {
 
       final lenses = await platform.getSupportedLenses();
 
-      // Should only contain valid lens types (0, 1, 2)
       expect(lenses, hasLength(3));
       expect(lenses, contains(CameraLensType.normal));
       expect(lenses, contains(CameraLensType.wide));
@@ -186,10 +165,8 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return ['invalid', null, 'another-invalid']; // All non-integers
+                return ['invalid', null, 'another-invalid'];
               }
               return null;
             },
@@ -205,10 +182,8 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [-1]; // any
+                return [CameraLensType.any.rawValue];
               }
               return null;
             },
@@ -220,15 +195,13 @@ void main() {
       expect(lenses.first, CameraLensType.any);
     });
 
-    test('handles unknown integer values (maps to any)', () async {
+    test('handles unknown positive integer values (maps to any)', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [99]; // Unknown value
+                return [99];
               }
               return null;
             },
@@ -238,9 +211,53 @@ void main() {
 
       expect(lenses, hasLength(1));
       expect(lenses.first, CameraLensType.any);
+    });
+
+    test('handles unknown negative integer values (maps to any)', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            platform.methodChannel,
+            (MethodCall methodCall) async {
+              if (methodCall.method == 'getSupportedLenses') {
+                return [-99];
+              }
+              return null;
+            },
+          );
+
+      final lenses = await platform.getSupportedLenses();
+
+      expect(lenses, hasLength(1));
+      expect(lenses.first, CameraLensType.any);
+    });
+
+    test('filters unknown values while keeping valid ones', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            platform.methodChannel,
+            (MethodCall methodCall) async {
+              if (methodCall.method == 'getSupportedLenses') {
+                return [
+                  CameraLensType.normal.rawValue,
+                  -99,
+                  CameraLensType.wide.rawValue,
+                ];
+              }
+              return null;
+            },
+          );
+
+      final lenses = await platform.getSupportedLenses();
+
+      expect(lenses, hasLength(3));
+      expect(lenses, contains(CameraLensType.normal));
+      expect(lenses, contains(CameraLensType.any));
+      expect(lenses, contains(CameraLensType.wide));
     });
 
     test('calls correct method on platform channel', () async {
+      final methodCalls = <MethodCall>[];
+
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             platform.methodChannel,
@@ -248,7 +265,7 @@ void main() {
               methodCalls.add(methodCall);
 
               if (methodCall.method == 'getSupportedLenses') {
-                return [0];
+                return [CameraLensType.normal.rawValue];
               }
               return null;
             },
@@ -265,10 +282,11 @@ void main() {
           .setMockMethodCallHandler(
             platform.methodChannel,
             (MethodCall methodCall) async {
-              methodCalls.add(methodCall);
-
               if (methodCall.method == 'getSupportedLenses') {
-                return [0, 2]; // normal and zoom
+                return [
+                  CameraLensType.normal.rawValue,
+                  CameraLensType.zoom.rawValue,
+                ];
               }
               return null;
             },
@@ -289,10 +307,12 @@ void main() {
             .setMockMethodCallHandler(
               platform.methodChannel,
               (MethodCall methodCall) async {
-                methodCalls.add(methodCall);
-
                 if (methodCall.method == 'getSupportedLenses') {
-                  return [0, 1, 2]; // normal, wide, zoom
+                  return [
+                    CameraLensType.normal.rawValue,
+                    CameraLensType.wide.rawValue,
+                    CameraLensType.zoom.rawValue,
+                  ];
                 }
                 return null;
               },
