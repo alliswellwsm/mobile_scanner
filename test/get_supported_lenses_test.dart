@@ -231,29 +231,32 @@ void main() {
       expect(lenses.first, CameraLensType.any);
     });
 
-    test('filters unknown values while keeping valid ones', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            platform.methodChannel,
-            (MethodCall methodCall) async {
-              if (methodCall.method == 'getSupportedLenses') {
-                return [
-                  CameraLensType.normal.rawValue,
-                  -99,
-                  CameraLensType.wide.rawValue,
-                ];
-              }
-              return null;
-            },
-          );
+    test(
+      'maps unknown values to any lens type while keeping valid ones',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              platform.methodChannel,
+              (MethodCall methodCall) async {
+                if (methodCall.method == 'getSupportedLenses') {
+                  return [
+                    CameraLensType.normal.rawValue,
+                    -99,
+                    CameraLensType.wide.rawValue,
+                  ];
+                }
+                return null;
+              },
+            );
 
-      final lenses = await platform.getSupportedLenses();
+        final lenses = await platform.getSupportedLenses();
 
-      expect(lenses, hasLength(3));
-      expect(lenses, contains(CameraLensType.normal));
-      expect(lenses, contains(CameraLensType.any));
-      expect(lenses, contains(CameraLensType.wide));
-    });
+        expect(lenses, hasLength(3));
+        expect(lenses, contains(CameraLensType.normal));
+        expect(lenses, contains(CameraLensType.any));
+        expect(lenses, contains(CameraLensType.wide));
+      },
+    );
 
     test('calls correct method on platform channel', () async {
       final methodCalls = <MethodCall>[];
