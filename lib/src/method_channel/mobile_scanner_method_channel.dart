@@ -194,7 +194,8 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   Future<void> _requestCameraPermission() async {
     try {
       final authorizationState = MobileScannerAuthorizationState.fromRawValue(
-        await methodChannel.invokeMethod<int>(kAuthorizationStateMethodName) ?? 0,
+        await methodChannel.invokeMethod<int>(kAuthorizationStateMethodName) ??
+            0,
       );
 
       switch (authorizationState) {
@@ -206,7 +207,9 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
         case MobileScannerAuthorizationState.denied:
         case MobileScannerAuthorizationState.undetermined:
           final permissionGranted =
-              await methodChannel.invokeMethod<bool>(kRequestAuthorizationMethodName) ??
+              await methodChannel.invokeMethod<bool>(
+                kRequestAuthorizationMethodName,
+              ) ??
               false;
 
           if (!permissionGranted) {
@@ -455,7 +458,9 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     _eventsStream = null;
     _deviceOrientationStream = null;
 
-    await methodChannel.invokeMethod<void>(kStopCameraMethodName, {'force': force});
+    await methodChannel.invokeMethod<void>(kStopCameraMethodName, {
+      'force': force,
+    });
   }
 
   @override
@@ -466,7 +471,9 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     _pausing = true;
 
-    await methodChannel.invokeMethod<void>(kPauseCameraMethodName, {'force': force});
+    await methodChannel.invokeMethod<void>(kPauseCameraMethodName, {
+      'force': force,
+    });
   }
 
   @override
