@@ -147,7 +147,7 @@ void main() {
           map['lensType'],
           lensType.rawValue,
           reason:
-          'Lens type $lensType should map to raw value '
+              'Lens type $lensType should map to raw value '
               '${lensType.rawValue}',
         );
       }
@@ -201,7 +201,7 @@ void main() {
           map['facing'],
           facing.rawValue,
           reason:
-          'Camera facing $facing should map to raw value '
+              'Camera facing $facing should map to raw value '
               '${facing.rawValue}',
         );
       }

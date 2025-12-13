@@ -449,10 +449,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       return <CameraLensType>[];
     }
 
-    return lensTypes
-        .whereType<int>()
-        .map(CameraLensType.fromRawValue)
-        .toList();
+    return lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toList();
   }
 
   @override

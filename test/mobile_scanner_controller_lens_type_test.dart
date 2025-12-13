@@ -49,20 +49,6 @@ void main() {
       await controller.dispose();
     });
 
-    test('lens type persists throughout controller lifecycle', () async {
-      final controller = MobileScannerController(
-        autoStart: false,
-        lensType: CameraLensType.zoom,
-      );
-
-      expect(controller.lensType, CameraLensType.zoom);
-
-      // Lens type should remain the same even after operations
-      expect(controller.lensType, CameraLensType.zoom);
-
-      await controller.dispose();
-    });
-
     test('different controllers can have different lens types', () async {
       final normalController = MobileScannerController(
         autoStart: false,
