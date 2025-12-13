@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
+import 'package:mobile_scanner/src/enums/camera_lens_type.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_authorization_state.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/enums/torch_state.dart';
@@ -85,6 +86,10 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// The name of the method that updates the scan window.
   @visibleForTesting
   static const String kUpdateScanWindowMethodName = 'updateScanWindow';
+
+  /// The name of the method that gets the supported camera lenses.
+  @visibleForTesting
+  static const String kGetSupportedLensesMethodName = 'getSupportedLenses';
 
   /// The method channel used to interact with the native platform.
   @visibleForTesting
@@ -496,6 +501,19 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     await methodChannel.invokeMethod<void>(kUpdateScanWindowMethodName, {
       'rect': points,
     });
+  }
+
+  @override
+  Future<Set<CameraLensType>> getSupportedLenses() async {
+    final lensTypes = await methodChannel.invokeListMethod<Object?>(
+      kGetSupportedLensesMethodName,
+    );
+
+    if (lensTypes == null || lensTypes.isEmpty) {
+      return <CameraLensType>{};
+    }
+
+    return lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toSet();
   }
 
   @override
