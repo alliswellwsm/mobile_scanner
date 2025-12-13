@@ -590,13 +590,14 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     await MobileScannerPlatform.instance.updateScanWindow(window);
   }
 
-  /// Get the list of supported camera lens types for the current device.
+  /// Get the set of supported camera lens types for the current device.
   ///
-  /// Returns a list of [CameraLensType] values that are available on the
+  /// Returns a set of [CameraLensType] values that are available on the
   /// device. This can be used to determine which lens types can be used
-  /// with the scanner.
+  /// with the scanner. Using a set ensures no duplicate lens types are
+  /// returned.
   ///
-  /// Returns an empty list if the device has no cameras, or if the platform
+  /// Returns an empty set if the device has no cameras, or if the platform
   /// does not support querying available lens types.
   ///
   /// This method can be called before starting the scanner.
@@ -612,7 +613,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   ///   print('Available lenses: $supportedLenses');
   /// }
   /// ```
-  Future<List<CameraLensType>> getSupportedLenses() async {
+  Future<Set<CameraLensType>> getSupportedLenses() async {
     if (_isDisposed) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,

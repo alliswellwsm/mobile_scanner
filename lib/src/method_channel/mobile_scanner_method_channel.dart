@@ -87,6 +87,10 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   @visibleForTesting
   static const String kUpdateScanWindowMethodName = 'updateScanWindow';
 
+  /// The name of the method that gets the supported camera lenses.
+  @visibleForTesting
+  static const String kGetSupportedLensesMethodName = 'getSupportedLenses';
+
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel(
@@ -500,16 +504,16 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   }
 
   @override
-  Future<List<CameraLensType>> getSupportedLenses() async {
+  Future<Set<CameraLensType>> getSupportedLenses() async {
     final lensTypes = await methodChannel.invokeListMethod<Object?>(
-      'getSupportedLenses',
+      kGetSupportedLensesMethodName,
     );
 
     if (lensTypes == null || lensTypes.isEmpty) {
-      return <CameraLensType>[];
+      return <CameraLensType>{};
     }
 
-    return lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toList();
+    return lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toSet();
   }
 
   @override

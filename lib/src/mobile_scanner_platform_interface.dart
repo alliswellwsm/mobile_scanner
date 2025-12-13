@@ -118,16 +118,16 @@ abstract class MobileScannerPlatform extends PlatformInterface {
     throw UnimplementedError('toggleTorch() has not been implemented.');
   }
 
-  /// Get the list of supported camera lens types for the current device.
+  /// Get the set of supported camera lens types for the current device.
   ///
-  /// Returns a list of [CameraLensType] values that are available on the
-  /// device.
+  /// Returns a set of [CameraLensType] values that are available on the
+  /// device. Using a set ensures no duplicate lens types are returned.
   ///
-  /// Returns an empty list if the device has no cameras, or if the platform
+  /// Returns an empty set if the device has no cameras, or if the platform
   /// does not support querying available lens types.
   ///
   /// This method can be called before starting the scanner.
-  Future<List<CameraLensType>> getSupportedLenses() {
+  Future<Set<CameraLensType>> getSupportedLenses() {
     throw UnimplementedError('getSupportedLenses() has not been implemented.');
   }
 
