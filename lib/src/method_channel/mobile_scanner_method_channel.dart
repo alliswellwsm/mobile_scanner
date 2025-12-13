@@ -35,6 +35,58 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   static const String kUnsupportdOperationErrorEventName =
       'MOBILE_SCANNER_UNSUPPORTED_OPERATION';
 
+  /// The name of the torch state event.
+  @visibleForTesting
+  static const String kTorchStateEventName = 'torchState';
+
+  /// The name of the zoom scale state event.
+  @visibleForTesting
+  static const String kZoomScaleStateEventName = 'zoomScaleState';
+
+  /// The name of the method that gets the camera authorization state.
+  @visibleForTesting
+  static const String kAuthorizationStateMethodName = 'state';
+
+  /// The name of the method that requests camera permissions.
+  @visibleForTesting
+  static const String kRequestAuthorizationMethodName = 'request';
+
+  /// The name of the method that analyzes an image for barcodes.
+  @visibleForTesting
+  static const String kAnalyzeImageMethodName = 'analyzeImage';
+
+  /// The name of the method that resets the zoom scale.
+  @visibleForTesting
+  static const String kResetScaleMethodName = 'resetScale';
+
+  /// The name of the method that sets the zoom scale.
+  @visibleForTesting
+  static const String kSetScaleMethodName = 'setScale';
+
+  /// The name of the method that sets the focus point.
+  @visibleForTesting
+  static const String kSetFocusMethodName = 'setFocus';
+
+  /// The name of the method that starts the camera.
+  @visibleForTesting
+  static const String kStartCameraMethodName = 'start';
+
+  /// The name of the method that stops the camera.
+  @visibleForTesting
+  static const String kStopCameraMethodName = 'stop';
+
+  /// The name of the method that pauses the camera.
+  @visibleForTesting
+  static const String kPauseCameraMethodName = 'pause';
+
+  /// The name of the method that toggles the torch.
+  @visibleForTesting
+  static const String kToggleTorchMethodName = 'toggleTorch';
+
+  /// The name of the method that updates the scan window.
+  @visibleForTesting
+  static const String kUpdateScanWindowMethodName = 'updateScanWindow';
+
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel(
@@ -143,7 +195,8 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   Future<void> _requestCameraPermission() async {
     try {
       final authorizationState = MobileScannerAuthorizationState.fromRawValue(
-        await methodChannel.invokeMethod<int>('state') ?? 0,
+        await methodChannel.invokeMethod<int>(kAuthorizationStateMethodName) ??
+            0,
       );
 
       switch (authorizationState) {
@@ -155,7 +208,10 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
         case MobileScannerAuthorizationState.denied:
         case MobileScannerAuthorizationState.undetermined:
           final permissionGranted =
-              await methodChannel.invokeMethod<bool>('request') ?? false;
+              await methodChannel.invokeMethod<bool>(
+                kRequestAuthorizationMethodName,
+              ) ??
+              false;
 
           if (!permissionGranted) {
             throw const MobileScannerException(
@@ -190,14 +246,14 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   @override
   Stream<TorchState> get torchStateStream {
     return eventsStream
-        .where((event) => event['name'] == 'torchState')
+        .where((event) => event['name'] == kTorchStateEventName)
         .map((event) => TorchState.fromRawValue(event['data'] as int? ?? 0));
   }
 
   @override
   Stream<double> get zoomScaleStateStream {
     return eventsStream
-        .where((event) => event['name'] == 'zoomScaleState')
+        .where((event) => event['name'] == kZoomScaleStateEventName)
         .map((event) => event['data'] as double? ?? 0.0);
   }
 
@@ -208,7 +264,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   }) async {
     try {
       final result = await methodChannel.invokeMapMethod<Object?, Object?>(
-        'analyzeImage',
+        kAnalyzeImageMethodName,
         {
           'filePath': path,
           'formats':
@@ -267,12 +323,12 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
   @override
   Future<void> resetZoomScale() async {
-    await methodChannel.invokeMethod<void>('resetScale');
+    await methodChannel.invokeMethod<void>(kResetScaleMethodName);
   }
 
   @override
   Future<void> setZoomScale(double zoomScale) async {
-    await methodChannel.invokeMethod<void>('setScale', zoomScale);
+    await methodChannel.invokeMethod<void>(kSetScaleMethodName, zoomScale);
   }
 
   @override
@@ -287,7 +343,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       'dy': position.dy,
     };
 
-    await methodChannel.invokeMethod<void>('setFocus', params);
+    await methodChannel.invokeMethod<void>(kSetFocusMethodName, params);
   }
 
   @override
@@ -307,7 +363,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     try {
       startResult = await methodChannel.invokeMapMethod<String, Object?>(
-        'start',
+        kStartCameraMethodName,
         startOptions.toMap(),
       );
     } on PlatformException catch (error) {
@@ -403,7 +459,9 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     _eventsStream = null;
     _deviceOrientationStream = null;
 
-    await methodChannel.invokeMethod<void>('stop', {'force': force});
+    await methodChannel.invokeMethod<void>(kStopCameraMethodName, {
+      'force': force,
+    });
   }
 
   @override
@@ -414,12 +472,14 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     _pausing = true;
 
-    await methodChannel.invokeMethod<void>('pause', {'force': force});
+    await methodChannel.invokeMethod<void>(kPauseCameraMethodName, {
+      'force': force,
+    });
   }
 
   @override
   Future<void> toggleTorch() async {
-    await methodChannel.invokeMethod<void>('toggleTorch');
+    await methodChannel.invokeMethod<void>(kToggleTorchMethodName);
   }
 
   @override
@@ -434,7 +494,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       points = [window.left, window.top, window.right, window.bottom];
     }
 
-    await methodChannel.invokeMethod<void>('updateScanWindow', {
+    await methodChannel.invokeMethod<void>(kUpdateScanWindowMethodName, {
       'rect': points,
     });
   }
