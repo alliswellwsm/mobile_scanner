@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
+import 'package:mobile_scanner/src/enums/camera_lens_type.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_authorization_state.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/enums/torch_state.dart';
@@ -436,6 +437,24 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     await methodChannel.invokeMethod<void>('updateScanWindow', {
       'rect': points,
     });
+  }
+
+  @override
+  Future<List<CameraLensType>> getSupportedLenses() async {
+    final lensTypes = await methodChannel.invokeListMethod<Object?>(
+      'getSupportedLenses',
+    );
+
+    if (lensTypes == null || lensTypes.isEmpty) {
+      // Default to 'any' if no lenses are reported
+      return [CameraLensType.any];
+    }
+
+    final validLensTypes =
+    lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toList();
+
+    // Return 'any' if all values were filtered out as invalid
+    return validLensTypes.isEmpty ? [CameraLensType.any] : validLensTypes;
   }
 
   @override

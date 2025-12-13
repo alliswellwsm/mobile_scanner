@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
+import 'package:mobile_scanner/src/enums/camera_lens_type.dart';
 import 'package:mobile_scanner/src/enums/detection_speed.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/enums/torch_state.dart';
@@ -26,6 +27,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   MobileScannerController({
     this.autoStart = true,
     this.cameraResolution,
+    this.lensType = CameraLensType.any,
     this.detectionSpeed = DetectionSpeed.normal,
     int detectionTimeoutMs = 250,
     this.facing = CameraFacing.back,
@@ -83,6 +85,17 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   ///
   /// Defaults to the back-facing camera.
   final CameraFacing facing;
+
+  /// The lens type for the camera.
+  ///
+  /// This allows selection between normal, wide, and zoom lenses on devices
+  /// with multiple cameras.
+  ///
+  /// Defaults to [CameraLensType.any], which uses the first available camera
+  /// for the given [facing] direction.
+  ///
+  /// Currently only supported on iOS and Android.
+  final CameraLensType lensType;
 
   /// The formats that the scanner should detect.
   ///
@@ -427,6 +440,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
 
     final options = StartOptions(
       cameraDirection: cameraDirection ?? facing,
+      cameraLensType: lensType,
       cameraResolution: cameraResolution,
       detectionSpeed: detectionSpeed,
       detectionTimeoutMs: detectionTimeoutMs,
@@ -574,6 +588,25 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     }
 
     await MobileScannerPlatform.instance.updateScanWindow(window);
+  }
+
+  /// Get the list of supported camera lens types for the current device.
+  ///
+  /// Returns a list of [CameraLensType] values that are available on the
+  /// device. This can be used to determine which lens types can be used
+  /// with the scanner.
+  ///
+  /// The returned list will always contain at least one lens type.
+  ///
+  /// This method can be called before starting the scanner.
+  ///
+  /// Example:
+  /// ```dart
+  /// final supportedLenses = await controller.getSupportedLenses();
+  /// print('Available lenses: $supportedLenses');
+  /// ```
+  Future<List<CameraLensType>> getSupportedLenses() async {
+    return MobileScannerPlatform.instance.getSupportedLenses();
   }
 
   /// Dispose the controller.
