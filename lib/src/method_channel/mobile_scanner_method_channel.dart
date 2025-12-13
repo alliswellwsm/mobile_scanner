@@ -446,15 +446,13 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     );
 
     if (lensTypes == null || lensTypes.isEmpty) {
-      // Default to 'any' if no lenses are reported
-      return [CameraLensType.any];
+      return <CameraLensType>[];
     }
 
-    final validLensTypes =
-    lensTypes.whereType<int>().map(CameraLensType.fromRawValue).toList();
-
-    // Return 'any' if all values were filtered out as invalid
-    return validLensTypes.isEmpty ? [CameraLensType.any] : validLensTypes;
+    return lensTypes
+        .whereType<int>()
+        .map(CameraLensType.fromRawValue)
+        .toList();
   }
 
   @override

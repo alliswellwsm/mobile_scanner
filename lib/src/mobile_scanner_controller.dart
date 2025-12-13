@@ -596,16 +596,32 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// device. This can be used to determine which lens types can be used
   /// with the scanner.
   ///
-  /// The returned list will always contain at least one lens type.
+  /// Returns an empty list if the device has no cameras, or if the platform
+  /// does not support querying available lens types.
   ///
   /// This method can be called before starting the scanner.
+  ///
+  /// Throws a [MobileScannerException] if the controller has been disposed.
   ///
   /// Example:
   /// ```dart
   /// final supportedLenses = await controller.getSupportedLenses();
-  /// print('Available lenses: $supportedLenses');
+  /// if (supportedLenses.isEmpty) {
+  ///   print('No camera lenses available');
+  /// } else {
+  ///   print('Available lenses: $supportedLenses');
+  /// }
   /// ```
   Future<List<CameraLensType>> getSupportedLenses() async {
+    if (_isDisposed) {
+      throw MobileScannerException(
+        errorCode: MobileScannerErrorCode.controllerDisposed,
+        errorDetails: MobileScannerErrorDetails(
+          message: MobileScannerErrorCode.controllerDisposed.message,
+        ),
+      );
+    }
+
     return MobileScannerPlatform.instance.getSupportedLenses();
   }
 

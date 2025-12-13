@@ -121,13 +121,15 @@ abstract class MobileScannerPlatform extends PlatformInterface {
   /// Get the list of supported camera lens types for the current device.
   ///
   /// Returns a list of [CameraLensType] values that are available on the
-  /// device. The list will always contain at least one lens type.
+  /// device.
+  ///
+  /// Returns an empty list if the device has no cameras, or if the platform
+  /// does not support querying available lens types.
   ///
   /// This method can be called before starting the scanner.
   Future<List<CameraLensType>> getSupportedLenses() {
     throw UnimplementedError('getSupportedLenses() has not been implemented.');
   }
-
 
   /// Update the scan window to the given [window] rectangle.
   ///
