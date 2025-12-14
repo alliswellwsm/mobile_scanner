@@ -99,6 +99,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             start(call, result)
         case "toggleTorch":
             toggleTorch(result)
+        case "getSupportedLenses":
+            getSupportedLenses(result)
         case "setScale":
             setScale(call, result)
         case "setFocus":
@@ -350,6 +352,78 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
 
+     /**
+     * Select the appropriate camera based on position and lens type.
+     *
+     * - Parameters:
+     *   - position: The camera position (front or back)
+     *   - lensType: The desired lens type (0 = normal, 1 = wide, 2 = zoom, -1 = any)
+     * - Returns: The selected AVCaptureDevice, or nil if not found
+     */
+    private func selectCamera(position: AVCaptureDevice.Position, lensType: Int) -> AVCaptureDevice? {
+#if os(iOS)
+        if #available(iOS 13.0, *) {
+            var deviceTypes: [AVCaptureDevice.DeviceType] = []
+
+            switch lensType {
+            case 0:
+                // Normal lens - prefer wide angle camera (standard on most phones)
+                deviceTypes = [.builtInWideAngleCamera]
+            case 1:
+                // Wide lens - prefer ultra-wide camera
+                deviceTypes = [.builtInUltraWideCamera, .builtInWideAngleCamera]
+            case 2:
+                // Zoom lens - prefer telephoto camera
+                deviceTypes = [.builtInTelephotoCamera, .builtInWideAngleCamera]
+            default:
+                // lensType == -1: Any lens type - use default discovery order
+                deviceTypes = [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera]
+            }
+
+            // Try to find a device matching the requested types
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: deviceTypes,
+                mediaType: .video,
+                position: position
+            )
+
+            if let device = discoverySession.devices.first {
+                return device
+            }
+
+            // Fallback: try to get any wide angle camera for this position
+            let fallbackSession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInWideAngleCamera],
+                mediaType: .video,
+                position: position
+            )
+            if let device = fallbackSession.devices.first {
+                return device
+            }
+        }
+#else
+        if #available(macOS 10.15, *) {
+            // macOS only has wide angle cameras
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInWideAngleCamera],
+                mediaType: .video,
+                position: position
+            )
+            if let device = discoverySession.devices.first {
+                return device
+            }
+        }
+#endif
+
+        // Legacy fallback for older OS versions: filter by position
+        if let device = AVCaptureDevice.devices(for: .video).filter({ $0.position == position }).first {
+            return device
+        }
+
+        // Ultimate fallback: any available video device
+        return AVCaptureDevice.default(for: .video)
+    }
+
     func start(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         if (device != nil || captureSession != nil) {
             result(FlutterError(code: MobileScannerErrorCodes.ALREADY_STARTED_ERROR,
@@ -365,6 +439,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         let torch:Bool = argReader.bool(key: "torch") ?? false
         let facing:Int = argReader.int(key: "facing") ?? 1
+        let lensType:Int = argReader.int(key: "lensType") ?? -1
         let speed:Int = argReader.int(key: "speed") ?? 0
         let timeoutMs:Int = argReader.int(key: "timeout") ?? 0
         let initialZoom: CGFloat? = {
@@ -386,26 +461,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 #else
         position = AVCaptureDevice.Position.front
 #endif
-        
-        // Open the camera device
-#if os(iOS)
-        if #available(iOS 13.0, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#else
-        if #available(macOS 10.15, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#endif
-        
-        if (device == nil) {
-            device = AVCaptureDevice.devices(for: .video).filter({$0.position == position}).first
-        }
-        
-        if (device == nil) {
-            device = AVCaptureDevice.default(for: .video)
-        }
-        
+
+        // Open the camera device based on position and lens type
+        device = selectCamera(position: position, lensType: lensType)
+
         if (device == nil) {
             result(FlutterError(code: MobileScannerErrorCodes.NO_CAMERA_ERROR,
                                 message: MobileScannerErrorCodes.NO_CAMERA_ERROR_MESSAGE,
@@ -564,6 +623,71 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         
         // Ultimate fallback: use the original default format
         return kCVPixelFormatType_32BGRA
+    }
+
+/**
+     * Get the list of supported lens types on this device.
+     *
+     * Analyzes all available camera devices and returns the supported lens types.
+     */
+    private func getSupportedLenses(_ result: @escaping FlutterResult) {
+#if os(iOS)
+        if #available(iOS 13.0, *) {
+            var supportedLenses = Set<Int>()
+
+            // Check back cameras
+            let backDevices = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
+                 mediaType: .video,
+                position: .back
+            ).devices
+
+            for device in backDevices {
+                switch device.deviceType {
+                case .builtInUltraWideCamera:
+                    supportedLenses.insert(1)  // Wide
+                case .builtInWideAngleCamera:
+                    supportedLenses.insert(0)  // Normal
+                case .builtInTelephotoCamera:
+                    supportedLenses.insert(2)  // Zoom
+                default:
+                    break
+                }
+            }
+
+            // Check front cameras
+            let frontDevices = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
+                 mediaType: .video,
+                position: .front
+            ).devices
+
+            for device in frontDevices {
+                switch device.deviceType {
+                case .builtInUltraWideCamera:
+                    supportedLenses.insert(1)  // Wide
+                case .builtInWideAngleCamera:
+                    supportedLenses.insert(0)  // Normal
+                case .builtInTelephotoCamera:
+                    supportedLenses.insert(2)  // Zoom
+                default:
+                    break
+                }
+            }
+
+            if supportedLenses.isEmpty {
+                result([])
+            } else {
+                result(Array(supportedLenses))
+            }
+        } else {
+            // For iOS < 13.0, return 'any' (-1)
+            result([-1])
+        }
+        #else
+            // For macOS, return 'any' (-1)
+            result([-1])
+        #endif
     }
 
     /// Turn the torch on.
