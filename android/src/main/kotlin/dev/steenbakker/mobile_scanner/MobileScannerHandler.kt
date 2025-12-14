@@ -79,16 +79,31 @@ class MobileScannerHandler(
          * Calculates the 35mm equivalent focal length.
          *
          * @param focalLengthMm The physical focal length in millimeters
-         * @param sensorSize The physical sensor size (width x height) in millimeters
-         * @return The 35mm equivalent focal length as an integer
+         * @param sensorWidthMm The physical sensor width in millimeters
+         * @param sensorHeightMm The physical sensor height in millimeters
+         * @return The 35mm equivalent focal length as an integer, or -1 if inputs are invalid
          */
-        fun calculate35mmEquivalent(focalLengthMm: Float, sensorSize: SizeF): Int {
+        fun calculate35mmEquivalent(focalLengthMm: Float, sensorWidthMm: Float, sensorHeightMm: Float): Int {
+            if (sensorWidthMm <= 0f || sensorHeightMm <= 0f || focalLengthMm < 0f) {
+                return -1
+            }
             val sensorDiagonal = sqrt(
-                (sensorSize.width * sensorSize.width) +
-                (sensorSize.height * sensorSize.height)
+                (sensorWidthMm * sensorWidthMm) +
+                (sensorHeightMm * sensorHeightMm)
             )
             val cropFactor = FULL_FRAME_DIAGONAL_MM / sensorDiagonal
             return (focalLengthMm * cropFactor).toInt()
+        }
+
+        /**
+         * Calculates the 35mm equivalent focal length.
+         *
+         * @param focalLengthMm The physical focal length in millimeters
+         * @param sensorSize The physical sensor size (width x height) in millimeters
+         * @return The 35mm equivalent focal length as an integer, or -1 if the sensor size is invalid
+         */
+        fun calculate35mmEquivalent(focalLengthMm: Float, sensorSize: SizeF): Int {
+            return calculate35mmEquivalent(focalLengthMm, sensorSize.width, sensorSize.height)
         }
 
         /**
@@ -112,10 +127,12 @@ class MobileScannerHandler(
          *
          * @param focalLengthMm The physical focal length in millimeters
          * @param sensorSize The physical sensor size (width x height) in millimeters
-         * @return The lens type: [LENS_TYPE_WIDE], [LENS_TYPE_NORMAL], or [LENS_TYPE_ZOOM]
+         * @return The lens type: [LENS_TYPE_WIDE], [LENS_TYPE_NORMAL], or [LENS_TYPE_ZOOM],
+         *         or null if the sensor size is invalid
          */
-        fun classifyLensType(focalLengthMm: Float, sensorSize: SizeF): Int {
+        fun classifyLensType(focalLengthMm: Float, sensorSize: SizeF): Int? {
             val equivalent = calculate35mmEquivalent(focalLengthMm, sensorSize)
+            if (equivalent < 0) return null
             return classifyLensType(equivalent)
         }
 
@@ -137,13 +154,21 @@ class MobileScannerHandler(
          * @param focalLengthMm The physical focal length in millimeters
          * @param sensorSize The physical sensor size (width x height) in millimeters
          * @param lensType The requested lens type
-         * @return True if the lens matches the requested type
+         * @return True if the lens matches the requested type, false if no match or invalid sensor size
          */
         fun matchesLensType(focalLengthMm: Float, sensorSize: SizeF, lensType: Int): Boolean {
             if (lensType == LENS_TYPE_ANY) return true
             val equivalent = calculate35mmEquivalent(focalLengthMm, sensorSize)
+            if (equivalent < 0) return false
             return classifyLensType(equivalent) == lensType
         }
+    }
+
+    /**
+     * Cached CameraManager instance to avoid repeated system service lookups.
+     */
+    private val cameraManager: CameraManager by lazy {
+        activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     }
 
     private val analyzeImageErrorCallback: AnalyzerErrorCallback = {
@@ -408,13 +433,12 @@ class MobileScannerHandler(
      * Get the list of supported lens types on this device.
      *
      * Analyzes all available cameras and categorizes them by their 35mm equivalent focal lengths.
-     * On Android 9+ (API 28), this also checks physical cameras within logical multi-camera devices
-     * to detect all available lenses (ultra-wide, wide, telephoto, periscope).
+     * On Android 9 (API 28) and above, this also checks physical cameras within logical
+     * multi-camera devices to detect all available lenses (ultra-wide, wide, telephoto, periscope).
      *
      * See [classifyLensType] for details on the classification thresholds.
      */
     private fun getSupportedLenses(result: MethodChannel.Result) {
-        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val supportedLenses = mutableSetOf<Int>()
 
         try {
@@ -499,8 +523,6 @@ class MobileScannerHandler(
         }
 
         // Build a camera selector that filters by both facing and lens characteristics
-        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-
         return CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .addCameraFilter { cameraInfos ->
@@ -535,7 +557,19 @@ class MobileScannerHandler(
 
                 // If filtering resulted in no cameras, return all cameras with correct facing
                 // to prevent camera binding failures
-                if (filteredCameras.isEmpty()) cameraInfos else filteredCameras
+                if (filteredCameras.isEmpty()) {
+                    val lensTypeName = when (lensType) {
+                        LENS_TYPE_WIDE -> "WIDE"
+                        LENS_TYPE_NORMAL -> "NORMAL"
+                        LENS_TYPE_ZOOM -> "ZOOM"
+                        else -> "UNKNOWN"
+                    }
+                    Log.w("MobileScannerHandler",
+                        "Requested lens type $lensTypeName not available, falling back to default camera")
+                    cameraInfos
+                } else {
+                    filteredCameras
+                }
             }
             .build()
     }
@@ -610,7 +644,6 @@ class MobileScannerHandler(
     }
 
     private fun getMaxZoomRatio(): Float {
-        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         var maxZoom = 1.0F
 
         try {

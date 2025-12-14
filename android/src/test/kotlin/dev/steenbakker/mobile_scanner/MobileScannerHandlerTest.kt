@@ -18,13 +18,105 @@ import kotlin.test.assertTrue
 internal class MobileScannerHandlerTest {
 
     // ==========================================================================
+    // calculate35mmEquivalent tests
+    // ==========================================================================
+
+    @Test
+    fun calculate35mmEquivalent_typicalSmartphoneSensor_returnsExpectedValue() {
+        // Typical smartphone sensor: ~5.6mm x 4.2mm diagonal ≈ 7mm
+        // With 4.3mm focal length: 4.3 * (43.27 / 7) ≈ 26mm (standard main lens)
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 5.6f, 4.2f)
+        assertEquals(26, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_ultraWideLens_returnsExpectedValue() {
+        // Ultra-wide lens with shorter focal length
+        // ~2.0mm focal length on same sensor: 2.0 * (43.27 / 7) ≈ 12mm
+        val result = MobileScannerHandler.calculate35mmEquivalent(2.0f, 5.6f, 4.2f)
+        assertEquals(12, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_telephotoLens_returnsExpectedValue() {
+        // Telephoto lens with longer focal length
+        // ~8.0mm focal length on same sensor: 8.0 * (43.27 / 7) ≈ 49mm
+        val result = MobileScannerHandler.calculate35mmEquivalent(8.0f, 5.6f, 4.2f)
+        assertEquals(49, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_zeroSensorWidth_returnsNegativeOne() {
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 0f, 4.2f)
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_zeroSensorHeight_returnsNegativeOne() {
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 5.6f, 0f)
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_negativeSensorWidth_returnsNegativeOne() {
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, -5.6f, 4.2f)
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_negativeSensorHeight_returnsNegativeOne() {
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 5.6f, -4.2f)
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_negativeFocalLength_returnsNegativeOne() {
+        val result = MobileScannerHandler.calculate35mmEquivalent(-4.3f, 5.6f, 4.2f)
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_zeroFocalLength_returnsZero() {
+        // Zero focal length with valid sensor should return 0 (not -1)
+        val result = MobileScannerHandler.calculate35mmEquivalent(0f, 5.6f, 4.2f)
+        assertEquals(0, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_verySmallSensor_returnsLargeEquivalent() {
+        // Very small sensor results in high crop factor and large 35mm equivalent
+        // 4.3mm focal length on 1mm x 1mm sensor: 4.3 * (43.27 / 1.41) ≈ 131mm
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 1f, 1f)
+        assertEquals(131, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_largeSensor_returnsSmallEquivalent() {
+        // Larger sensor (closer to full-frame) results in lower crop factor
+        // 4.3mm focal length on 30mm x 20mm sensor: 4.3 * (43.27 / 36.06) ≈ 5mm
+        val result = MobileScannerHandler.calculate35mmEquivalent(4.3f, 30f, 20f)
+        assertEquals(5, result)
+    }
+
+    @Test
+    fun calculate35mmEquivalent_fullFrameSensor_returnsApproximateFocalLength() {
+        // Full-frame sensor (36mm x 24mm, diagonal ≈ 43.27mm) should return ~focal length
+        // 50mm focal length on full-frame: 50 * (43.27 / 43.27) = 50mm
+        val result = MobileScannerHandler.calculate35mmEquivalent(50f, 36f, 24f)
+        // Allow for rounding: 43.27 / sqrt(36^2 + 24^2) = 43.27 / 43.27 ≈ 1.0
+        assertEquals(50, result)
+    }
+
+    // ==========================================================================
     // classifyLensType(equivalent35mm: Int) tests
     // ==========================================================================
 
     @Test
     fun classifyLensType_belowWideThreshold_returnsWide() {
         // Values below 20mm 35mm-equivalent should be classified as wide (ultra-wide)
+        // Includes typical ultra-wide values (~13-16mm for "0.5x" lenses)
         assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(13))
+        assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(14))
         assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(16))
         assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(19))
     }
@@ -43,9 +135,11 @@ internal class MobileScannerHandlerTest {
     @Test
     fun classifyLensType_inNormalRange_returnsNormal() {
         // Values between 20mm and 35mm should be classified as normal (standard main lens)
+        // Includes typical main lens values (~24-28mm for "1x" lenses)
         assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(24))
         assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(26))
         assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(28))
+        assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(32))
     }
 
     @Test
@@ -62,41 +156,12 @@ internal class MobileScannerHandlerTest {
     @Test
     fun classifyLensType_aboveZoomThreshold_returnsZoom() {
         // Values above 35mm should be classified as zoom (telephoto)
-        assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(50))
-        assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(75))
-        assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(120))
-    }
-
-    @Test
-    fun classifyLensType_typicalUltraWide_returnsWide() {
-        // ~13-16mm is typical for "0.5x" ultra-wide lenses
-        assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(13))
-        assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(14))
-        assertEquals(MobileScannerHandler.LENS_TYPE_WIDE, MobileScannerHandler.classifyLensType(16))
-    }
-
-    @Test
-    fun classifyLensType_typicalMainLens_returnsNormal() {
-        // ~24-28mm is typical for "1x" main lenses
-        assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(24))
-        assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(26))
-        assertEquals(MobileScannerHandler.LENS_TYPE_NORMAL, MobileScannerHandler.classifyLensType(28))
-    }
-
-    @Test
-    fun classifyLensType_typicalTelephoto_returnsZoom() {
-        // ~50-75mm is typical for "2x" or "3x" telephoto lenses
+        // Includes typical telephoto (50-75mm for "2x"/"3x") and periscope (120mm+ for "5x"/"10x")
         assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(50))
         assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(70))
         assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(75))
-    }
-
-    @Test
-    fun classifyLensType_typicalPeriscope_returnsZoom() {
-        // ~120mm+ is typical for "5x" or "10x" periscope lenses
         assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(120))
         assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(200))
-        assertEquals(MobileScannerHandler.LENS_TYPE_ZOOM, MobileScannerHandler.classifyLensType(240))
     }
 
     @Test
