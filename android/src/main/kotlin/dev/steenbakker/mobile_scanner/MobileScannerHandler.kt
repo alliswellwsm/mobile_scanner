@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -49,9 +50,14 @@ class MobileScannerHandler(
          * These values are heuristics based on typical smartphone camera modules.
          * There is no official standard, but these ranges are commonly observed:
          *
-         * - Ultra-wide lenses: ~1.5-3.5mm physical focal length (~13-16mm 35mm equivalent)
-         * - Standard/Wide lenses: ~4-6mm physical focal length (~24-28mm 35mm equivalent)
-         * - Telephoto lenses: ~6mm+ physical focal length (~50mm+ 35mm equivalent)
+         * - Ultra-wide lenses: <4mm physical focal length (~13-16mm 35mm equivalent)
+         * - Standard/Wide lenses: 4-6mm physical focal length (~24-28mm 35mm equivalent)
+         * - Telephoto lenses: >6mm physical focal length (~50mm+ 35mm equivalent)
+         *
+         * Classification boundaries:
+         * - Wide: focalLength < 4.0mm
+         * - Normal: 4.0mm <= focalLength <= 6.0mm
+         * - Zoom: focalLength > 6.0mm
          *
          * The 35mm equivalent depends on the sensor size, which varies between devices.
          * These thresholds work well for most modern smartphones but may need adjustment
@@ -367,8 +373,10 @@ class MobileScannerHandler(
                 val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
 
                 if (focalLengths != null && focalLengths.isNotEmpty()) {
-                    // Use the first focal length as representative
-                    val focalLength = focalLengths[0]
+                    // Use the minimum focal length to represent the camera's widest capability.
+                    // Some cameras report multiple focal lengths for zoom or different optical
+                    // configurations. The widest angle is typically most relevant for barcode scanning.
+                    val focalLength = focalLengths.min()
                     supportedLenses.add(classifyLensType(focalLength))
                 }
             }
@@ -401,11 +409,11 @@ class MobileScannerHandler(
         }
 
         // Build a camera selector that filters by both facing and lens characteristics
+        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+
         return CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .addCameraFilter { cameraInfos ->
-                val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-
                 val filteredCameras = cameraInfos.filter { cameraInfo ->
                     try {
                         // Get the camera ID from CameraInfo
@@ -417,16 +425,22 @@ class MobileScannerHandler(
 
                         if (focalLengths == null || focalLengths.isEmpty()) {
                             // Without focal length info, we can't determine the lens type.
-                            // Only include this camera if the user requested "any" lens type.
-                            return@filter lensType == LENS_TYPE_ANY
+                            // Exclude this camera since a specific lens type was requested.
+                            // (LENS_TYPE_ANY is already handled by the early return above.)
+                            return@filter false
                         }
 
-                        // Use the first focal length as representative
-                        val focalLength = focalLengths[0]
+                        // Use the minimum focal length to represent the camera's widest capability.
+                        // Some cameras report multiple focal lengths for zoom or different optical
+                        // configurations. The widest angle is typically most relevant for barcode scanning.
+                        val focalLength = focalLengths.min()
                         matchesLensType(focalLength, lensType)
                     } catch (e: Exception) {
-                        // If we can't get characteristics, include this camera
-                        true
+                        // If we can't get characteristics, exclude this camera for consistency
+                        // with the "no focal length info" case above. The fallback at the end
+                        // of the filter will return all cameras if none match.
+                        Log.w("MobileScannerHandler", "Failed to get camera characteristics", e)
+                        false
                     }
                 }
 
