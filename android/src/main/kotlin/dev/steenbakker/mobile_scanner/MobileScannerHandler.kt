@@ -2,20 +2,13 @@ package dev.steenbakker.mobile_scanner
 
 import android.app.Activity
 import android.content.Context
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.util.Size
-import android.util.SizeF
-import kotlin.math.sqrt
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ExperimentalLensFacing
-import androidx.camera.camera2.interop.Camera2CameraInfo
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import dev.steenbakker.mobile_scanner.objects.BarcodeFormats
 import dev.steenbakker.mobile_scanner.objects.DetectionSpeed
@@ -37,132 +30,6 @@ class MobileScannerHandler(
     private val permissions: MobileScannerPermissions,
     private val addPermissionListener: (RequestPermissionsResultListener) -> Unit,
     textureRegistry: TextureRegistry): MethodChannel.MethodCallHandler {
-
-    companion object {
-        /**
-         * Lens type constants matching the Dart enum values.
-         */
-        const val LENS_TYPE_NORMAL = 0
-        const val LENS_TYPE_WIDE = 1
-        const val LENS_TYPE_ZOOM = 2
-        const val LENS_TYPE_ANY = -1
-
-        /**
-         * The diagonal of a standard 35mm full-frame sensor in millimeters.
-         * Used as the reference for calculating 35mm equivalent focal lengths.
-         */
-        const val FULL_FRAME_DIAGONAL_MM = 43.27f
-
-        /**
-         * 35mm equivalent focal length thresholds for classifying smartphone camera lenses.
-         *
-         * These thresholds are based on standard photography conventions:
-         *
-         * - Ultra-Wide (Wide): <20mm equivalent - The "0.5x" lens
-         * - Standard (Normal): 20-35mm equivalent - The "1x" main lens (typically ~24-28mm)
-         * - Telephoto (Zoom): >35mm equivalent - The "2x", "3x", "5x" telephoto lenses
-         *
-         * The 35mm equivalent is calculated using the formula:
-         * equivalent = focalLength * (43.27 / sensorDiagonal)
-         *
-         * This approach is more accurate than using raw focal lengths because it
-         * accounts for sensor size variations between devices.
-         *
-         * References:
-         * - 35mm equivalent focal length: https://en.wikipedia.org/wiki/35_mm_equivalent_focal_length
-         * - Android CameraCharacteristics documentation
-         */
-        const val EQUIVALENT_35MM_WIDE_THRESHOLD = 20
-        const val EQUIVALENT_35MM_ZOOM_THRESHOLD = 35
-
-        /**
-         * Calculates the 35mm equivalent focal length.
-         *
-         * @param focalLengthMm The physical focal length in millimeters
-         * @param sensorWidthMm The physical sensor width in millimeters
-         * @param sensorHeightMm The physical sensor height in millimeters
-         * @return The 35mm equivalent focal length as an integer, or -1 if inputs are invalid
-         */
-        fun calculate35mmEquivalent(focalLengthMm: Float, sensorWidthMm: Float, sensorHeightMm: Float): Int {
-            if (sensorWidthMm <= 0f || sensorHeightMm <= 0f || focalLengthMm < 0f) {
-                return -1
-            }
-            val sensorDiagonal = sqrt(
-                (sensorWidthMm * sensorWidthMm) +
-                (sensorHeightMm * sensorHeightMm)
-            )
-            val cropFactor = FULL_FRAME_DIAGONAL_MM / sensorDiagonal
-            return (focalLengthMm * cropFactor).toInt()
-        }
-
-        /**
-         * Calculates the 35mm equivalent focal length.
-         *
-         * @param focalLengthMm The physical focal length in millimeters
-         * @param sensorSize The physical sensor size (width x height) in millimeters
-         * @return The 35mm equivalent focal length as an integer, or -1 if the sensor size is invalid
-         */
-        fun calculate35mmEquivalent(focalLengthMm: Float, sensorSize: SizeF): Int {
-            return calculate35mmEquivalent(focalLengthMm, sensorSize.width, sensorSize.height)
-        }
-
-        /**
-         * Classifies a 35mm equivalent focal length into a lens type category.
-         *
-         * @param equivalent35mm The 35mm equivalent focal length
-         * @return The lens type: [LENS_TYPE_WIDE], [LENS_TYPE_NORMAL], or [LENS_TYPE_ZOOM]
-         */
-        fun classifyLensType(equivalent35mm: Int): Int {
-            return when {
-                equivalent35mm < EQUIVALENT_35MM_WIDE_THRESHOLD -> LENS_TYPE_WIDE
-                equivalent35mm <= EQUIVALENT_35MM_ZOOM_THRESHOLD -> LENS_TYPE_NORMAL
-                else -> LENS_TYPE_ZOOM
-            }
-        }
-
-        /**
-         * Classifies a lens using raw focal length and sensor size.
-         *
-         * Calculates the 35mm equivalent first, then classifies based on that.
-         *
-         * @param focalLengthMm The physical focal length in millimeters
-         * @param sensorSize The physical sensor size (width x height) in millimeters
-         * @return The lens type: [LENS_TYPE_WIDE], [LENS_TYPE_NORMAL], or [LENS_TYPE_ZOOM],
-         *         or null if the sensor size is invalid
-         */
-        fun classifyLensType(focalLengthMm: Float, sensorSize: SizeF): Int? {
-            val equivalent = calculate35mmEquivalent(focalLengthMm, sensorSize)
-            if (equivalent < 0) return null
-            return classifyLensType(equivalent)
-        }
-
-        /**
-         * Checks if a 35mm equivalent focal length matches the requested lens type.
-         *
-         * @param equivalent35mm The 35mm equivalent focal length
-         * @param lensType The requested lens type
-         * @return True if the focal length matches the lens type category
-         */
-        fun matchesLensType(equivalent35mm: Int, lensType: Int): Boolean {
-            if (lensType == LENS_TYPE_ANY) return true
-            return classifyLensType(equivalent35mm) == lensType
-        }
-
-        /**
-         * Checks if a lens matches the requested type using raw focal length and sensor size.
-         *
-         * @param focalLengthMm The physical focal length in millimeters
-         * @param sensorSize The physical sensor size (width x height) in millimeters
-         * @param lensType The requested lens type
-         * @return True if the lens matches the requested type, false if no match or invalid sensor size
-         */
-        fun matchesLensType(focalLengthMm: Float, sensorSize: SizeF, lensType: Int): Boolean {
-            if (lensType == LENS_TYPE_ANY) return true
-            val equivalent = calculate35mmEquivalent(focalLengthMm, sensorSize)
-            if (equivalent < 0) return false
-            return classifyLensType(equivalent) == lensType
-        }
-    }
 
     /**
      * Cached CameraManager instance to avoid repeated system service lookups.
@@ -317,7 +184,7 @@ class MobileScannerHandler(
 
         val barcodeScannerOptions: BarcodeScannerOptions? = buildBarcodeScannerOptions(formats, autoZoom)
 
-        val position = selectCameraUsingFacingAndLens(facing, lensType)
+        val position = MobileScannerCameraLensSelector.selectCamera(cameraManager, facing, lensType)
 
         val detectionSpeed: DetectionSpeed = when (speed) {
             0 -> DetectionSpeed.NO_DUPLICATES
@@ -431,50 +298,10 @@ class MobileScannerHandler(
 
     /**
      * Get the list of supported lens types on this device.
-     *
-     * Analyzes all available cameras and categorizes them by their 35mm equivalent focal lengths.
-     * On Android 9 (API 28) and above, this also checks physical cameras within logical
-     * multi-camera devices to detect all available lenses (ultra-wide, wide, telephoto, periscope).
-     *
-     * See [classifyLensType] for details on the classification thresholds.
      */
     private fun getSupportedLenses(result: MethodChannel.Result) {
-        val supportedLenses = mutableSetOf<Int>()
-
         try {
-            for (cameraId in cameraManager.cameraIdList) {
-                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-
-                // On Android 9+, check for physical cameras within logical multi-camera devices.
-                // Modern phones (Pixel, Samsung, etc.) group multiple lenses under one logical ID.
-                val physicalIds = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    characteristics.physicalCameraIds
-                } else {
-                    emptySet()
-                }
-
-                if (physicalIds.isNotEmpty()) {
-                    // Multi-camera device: analyze each physical camera
-                    for (physicalId in physicalIds) {
-                        try {
-                            val physicalChars = cameraManager.getCameraCharacteristics(physicalId)
-                            val lensType = getLensTypeFromCharacteristics(physicalChars)
-                            if (lensType != null) {
-                                supportedLenses.add(lensType)
-                            }
-                        } catch (e: Exception) {
-                            Log.w("MobileScannerHandler", "Failed to get physical camera $physicalId characteristics", e)
-                        }
-                    }
-                } else {
-                    // Single camera or legacy device: analyze the logical camera
-                    val lensType = getLensTypeFromCharacteristics(characteristics)
-                    if (lensType != null) {
-                        supportedLenses.add(lensType)
-                    }
-                }
-            }
-
+            val supportedLenses = MobileScannerCameraLensSelector.getSupportedLenses(cameraManager)
             result.success(supportedLenses.toList())
         } catch (e: Exception) {
             result.error(
@@ -483,95 +310,6 @@ class MobileScannerHandler(
                 null
             )
         }
-    }
-
-    /**
-     * Extracts the lens type from camera characteristics using 35mm equivalent calculation.
-     *
-     * @param characteristics The camera characteristics to analyze
-     * @return The lens type, or null if the characteristics are insufficient
-     */
-    private fun getLensTypeFromCharacteristics(characteristics: CameraCharacteristics): Int? {
-        val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
-        val sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
-
-        if (focalLengths == null || focalLengths.isEmpty() || sensorSize == null) {
-            return null
-        }
-
-        // Use the first focal length (most physical lenses have fixed focal length)
-        val focalLength = focalLengths[0]
-        return classifyLensType(focalLength, sensorSize)
-    }
-
-    /**
-     * Select the appropriate camera based on facing direction and lens type.
-     *
-     * Uses 35mm equivalent focal length calculation for accurate lens classification.
-     * See [classifyLensType] for details on the classification thresholds.
-     *
-     * @param facing 0 = front, 1 = back
-     * @param lensType [LENS_TYPE_NORMAL], [LENS_TYPE_WIDE], [LENS_TYPE_ZOOM], or [LENS_TYPE_ANY]
-     * @return CameraSelector configured for the desired camera
-     */
-    private fun selectCameraUsingFacingAndLens(facing: Int, lensType: Int): CameraSelector {
-        val lensFacing = if (facing == 0) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
-
-        // If no specific lens type is requested, return default camera for facing direction
-        if (lensType == LENS_TYPE_ANY) {
-            return if (facing == 0) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
-        }
-
-        // Build a camera selector that filters by both facing and lens characteristics
-        return CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .addCameraFilter { cameraInfos ->
-                val filteredCameras = cameraInfos.filter { cameraInfo ->
-                    try {
-                        // Get the camera ID from CameraInfo
-                        val cameraId = Camera2CameraInfo.from(cameraInfo).cameraId
-                        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-
-                        // Get focal lengths and sensor size for 35mm equivalent calculation
-                        val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
-                        val sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
-
-                        if (focalLengths == null || focalLengths.isEmpty() || sensorSize == null) {
-                            // Without focal length or sensor info, we can't determine the lens type.
-                            // Exclude this camera since a specific lens type was requested.
-                            // (LENS_TYPE_ANY is already handled by the early return above.)
-                            return@filter false
-                        }
-
-                        // Use the first focal length (most physical lenses have fixed focal length)
-                        val focalLength = focalLengths[0]
-                        matchesLensType(focalLength, sensorSize, lensType)
-                    } catch (e: Exception) {
-                        // If we can't get characteristics, exclude this camera for consistency
-                        // with the "no focal length info" case above. The fallback at the end
-                        // of the filter will return all cameras if none match.
-                        Log.w("MobileScannerHandler", "Failed to get camera characteristics", e)
-                        false
-                    }
-                }
-
-                // If filtering resulted in no cameras, return all cameras with correct facing
-                // to prevent camera binding failures
-                if (filteredCameras.isEmpty()) {
-                    val lensTypeName = when (lensType) {
-                        LENS_TYPE_WIDE -> "WIDE"
-                        LENS_TYPE_NORMAL -> "NORMAL"
-                        LENS_TYPE_ZOOM -> "ZOOM"
-                        else -> "UNKNOWN"
-                    }
-                    Log.w("MobileScannerHandler",
-                        "Requested lens type $lensTypeName not available, falling back to default camera")
-                    cameraInfos
-                } else {
-                    filteredCameras
-                }
-            }
-            .build()
     }
 
     private fun setScale(call: MethodCall, result: MethodChannel.Result) {
