@@ -678,7 +678,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 }
             }
 
-            result(Array(supportedLenses))
+            result(supportedLenses.sorted())
         } else {
             result([])
         }
