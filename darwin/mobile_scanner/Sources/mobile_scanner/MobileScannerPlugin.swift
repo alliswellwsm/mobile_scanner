@@ -11,11 +11,11 @@ import VideoToolbox
   import FlutterMacOS
 #endif
 
-/// Constants for camera lens types.
+/// Constants for camera lens types matching AVCaptureDevice.DeviceType naming.
 struct LensType {
-    static let normal = 0
-    static let wide = 1
-    static let zoom = 2
+    static let wideAngle = 0   // .builtInWideAngleCamera - standard 1x camera
+    static let ultraWide = 1   // .builtInUltraWideCamera - 0.5x camera
+    static let telephoto = 2   // .builtInTelephotoCamera - 2x+ camera
 }
 
 /// Maps an AVCaptureDevice.DeviceType to a LensType value.
@@ -26,11 +26,11 @@ struct LensType {
 func lensTypeFrom(deviceType: AVCaptureDevice.DeviceType) -> Int? {
     switch deviceType {
     case .builtInWideAngleCamera:
-        return LensType.normal
+        return LensType.wideAngle
     case .builtInUltraWideCamera:
-        return LensType.wide
+        return LensType.ultraWide
     case .builtInTelephotoCamera:
-        return LensType.zoom
+        return LensType.telephoto
     default:
         return nil
     }
@@ -377,32 +377,33 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
 
-     /**
-     * Select the appropriate camera based on position and lens type.
-     *
-     * - Parameters:
-     *   - position: The camera position (front or back)
-     *   - lensType: The desired lens type (LensType.normal, LensType.wide, LensType.zoom, or any other value for default)
-     * - Returns: The selected AVCaptureDevice, or nil if not found
-     */
+    /// Select the appropriate camera based on position and lens type.
+    ///
+    /// - Parameters:
+    ///   - position: The camera position (front or back)
+    ///   - lensType: The desired lens type (LensType.wideAngle, LensType.ultraWide, LensType.telephoto, or any other value for default)
+    /// - Returns: The selected AVCaptureDevice, or nil if not found
     private func selectCamera(position: AVCaptureDevice.Position, lensType: Int) -> AVCaptureDevice? {
+        let isSpecificLensRequest = lensType == LensType.wideAngle ||
+                                    lensType == LensType.ultraWide ||
+                                    lensType == LensType.telephoto
+
 #if os(iOS)
         if #available(iOS 13.0, *) {
-            var deviceTypes: [AVCaptureDevice.DeviceType] = []
+            let deviceTypes: [AVCaptureDevice.DeviceType]
 
             switch lensType {
-            case LensType.normal:
+            case LensType.wideAngle:
                 deviceTypes = [.builtInWideAngleCamera]
-            case LensType.wide:
-                deviceTypes = [.builtInUltraWideCamera, .builtInWideAngleCamera]
-            case LensType.zoom:
-                deviceTypes = [.builtInTelephotoCamera, .builtInWideAngleCamera]
+            case LensType.ultraWide:
+                deviceTypes = [.builtInUltraWideCamera]
+            case LensType.telephoto:
+                deviceTypes = [.builtInTelephotoCamera]
             default:
                 // Any lens type - use default discovery order
                 deviceTypes = [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera]
             }
 
-            // Try to find a device matching the requested types
             let discoverySession = AVCaptureDevice.DiscoverySession(
                 deviceTypes: deviceTypes,
                 mediaType: .video,
@@ -413,14 +414,16 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 return device
             }
 
-            // Fallback: try to get any wide angle camera for this position
-            let fallbackSession = AVCaptureDevice.DiscoverySession(
-                deviceTypes: [.builtInWideAngleCamera],
-                mediaType: .video,
-                position: position
-            )
-            if let device = fallbackSession.devices.first {
-                return device
+            // Only use fallbacks for non-specific lens requests
+            if !isSpecificLensRequest {
+                let fallbackSession = AVCaptureDevice.DiscoverySession(
+                    deviceTypes: [.builtInWideAngleCamera],
+                    mediaType: .video,
+                    position: position
+                )
+                if let device = fallbackSession.devices.first {
+                    return device
+                }
             }
         }
 #else
@@ -436,6 +439,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             }
         }
 #endif
+
+        // Only use legacy fallbacks for non-specific lens requests
+        if isSpecificLensRequest {
+            return nil
+        }
 
         // Legacy fallback for older OS versions: filter by position
         if let device = AVCaptureDevice.devices(for: .video).filter({ $0.position == position }).first {
@@ -647,11 +655,9 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         return kCVPixelFormatType_32BGRA
     }
 
-/**
-     * Get the list of supported lens types on this device.
-     *
-     * Analyzes all available camera devices and returns the supported lens types.
-     */
+    /// Get the list of supported lens types on this device.
+    ///
+    /// Analyzes all available camera devices and returns the supported lens types.
     private func getSupportedLenses(_ result: @escaping FlutterResult) {
 #if os(iOS)
         if #available(iOS 13.0, *) {
