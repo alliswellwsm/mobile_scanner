@@ -11,6 +11,7 @@ import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ExperimentalLensFacing
+import androidx.camera.camera2.interop.Camera2CameraInfo
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import dev.steenbakker.mobile_scanner.objects.BarcodeFormats
 import dev.steenbakker.mobile_scanner.objects.DetectionSpeed
@@ -32,6 +33,63 @@ class MobileScannerHandler(
     private val permissions: MobileScannerPermissions,
     private val addPermissionListener: (RequestPermissionsResultListener) -> Unit,
     textureRegistry: TextureRegistry): MethodChannel.MethodCallHandler {
+
+    companion object {
+        /**
+         * Lens type constants matching the Dart enum values.
+         */
+        const val LENS_TYPE_NORMAL = 0
+        const val LENS_TYPE_WIDE = 1
+        const val LENS_TYPE_ZOOM = 2
+        const val LENS_TYPE_ANY = -1
+
+        /**
+         * Focal length thresholds for classifying smartphone camera lenses.
+         *
+         * These values are heuristics based on typical smartphone camera modules.
+         * There is no official standard, but these ranges are commonly observed:
+         *
+         * - Ultra-wide lenses: ~1.5-3.5mm physical focal length (~13-16mm 35mm equivalent)
+         * - Standard/Wide lenses: ~4-6mm physical focal length (~24-28mm 35mm equivalent)
+         * - Telephoto lenses: ~6mm+ physical focal length (~50mm+ 35mm equivalent)
+         *
+         * The 35mm equivalent depends on the sensor size, which varies between devices.
+         * These thresholds work well for most modern smartphones but may need adjustment
+         * for unusual camera configurations.
+         *
+         * References:
+         * - Android CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS documentation
+         * - https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics#LENS_INFO_AVAILABLE_FOCAL_LENGTHS
+         */
+        const val FOCAL_LENGTH_WIDE_THRESHOLD = 4.0f
+        const val FOCAL_LENGTH_ZOOM_THRESHOLD = 6.0f
+
+        /**
+         * Classifies a focal length into a lens type category.
+         *
+         * @param focalLength The physical focal length in millimeters
+         * @return The lens type: [LENS_TYPE_WIDE], [LENS_TYPE_NORMAL], or [LENS_TYPE_ZOOM]
+         */
+        fun classifyLensType(focalLength: Float): Int {
+            return when {
+                focalLength < FOCAL_LENGTH_WIDE_THRESHOLD -> LENS_TYPE_WIDE
+                focalLength <= FOCAL_LENGTH_ZOOM_THRESHOLD -> LENS_TYPE_NORMAL
+                else -> LENS_TYPE_ZOOM
+            }
+        }
+
+        /**
+         * Checks if a focal length matches the requested lens type.
+         *
+         * @param focalLength The physical focal length in millimeters
+         * @param lensType The requested lens type
+         * @return True if the focal length matches the lens type category
+         */
+        fun matchesLensType(focalLength: Float, lensType: Int): Boolean {
+            if (lensType == LENS_TYPE_ANY) return true
+            return classifyLensType(focalLength) == lensType
+        }
+    }
 
     private val analyzeImageErrorCallback: AnalyzerErrorCallback = {
         Handler(Looper.getMainLooper()).post {
@@ -147,6 +205,7 @@ class MobileScannerHandler(
             "pause" -> pause(call, result)
             "stop" -> stop(call, result)
             "toggleTorch" -> toggleTorch(result)
+            "getSupportedLenses" -> getSupportedLenses(result)
             "analyzeImage" -> analyzeImage(call, result)
             "setScale" -> setScale(call, result)
             "resetScale" -> resetScale(result)
@@ -161,6 +220,7 @@ class MobileScannerHandler(
     private fun start(call: MethodCall, result: MethodChannel.Result) {
         val torch: Boolean = call.argument<Boolean>("torch") ?: false
         val facing: Int = call.argument<Int>("facing") ?: 0
+        val lensType: Int = call.argument<Int>("lensType") ?: -1
         val formats: List<Int>? = call.argument<List<Int>>("formats")
         val returnImage: Boolean = call.argument<Boolean>("returnImage") ?: false
         val speed: Int = call.argument<Int>("speed") ?: 1
@@ -177,8 +237,7 @@ class MobileScannerHandler(
 
         val barcodeScannerOptions: BarcodeScannerOptions? = buildBarcodeScannerOptions(formats, autoZoom)
 
-        val position =
-            if (facing == 0) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+        val position = selectCameraUsingFacingAndLens(facing, lensType)
 
         val detectionSpeed: DetectionSpeed = when (speed) {
             0 -> DetectionSpeed.NO_DUPLICATES
@@ -288,6 +347,94 @@ class MobileScannerHandler(
     private fun toggleTorch(result: MethodChannel.Result) {
         mobileScanner?.toggleTorch()
         result.success(null)
+    }
+
+    /**
+     * Get the list of supported lens types on this device.
+     *
+     * Analyzes all available cameras and categorizes them by their focal lengths.
+     * See [classifyLensType] for details on the classification thresholds.
+     */
+    private fun getSupportedLenses(result: MethodChannel.Result) {
+        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val supportedLenses = mutableSetOf<Int>()
+
+        try {
+            for (cameraId in cameraManager.cameraIdList) {
+                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+
+                // Get focal lengths available for this camera
+                val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+
+                if (focalLengths != null && focalLengths.isNotEmpty()) {
+                    // Use the first focal length as representative
+                    val focalLength = focalLengths[0]
+                    supportedLenses.add(classifyLensType(focalLength))
+                }
+            }
+
+            result.success(supportedLenses.toList())
+        } catch (e: Exception) {
+            result.error(
+                MobileScannerErrorCodes.GENERIC_ERROR,
+                e.localizedMessage ?: MobileScannerErrorCodes.GENERIC_ERROR_MESSAGE,
+                null
+            )
+        }
+    }
+
+    /**
+     * Select the appropriate camera based on facing direction and lens type.
+     *
+     * See [classifyLensType] for details on the focal length classification thresholds.
+     *
+     * @param facing 0 = front, 1 = back
+     * @param lensType [LENS_TYPE_NORMAL], [LENS_TYPE_WIDE], [LENS_TYPE_ZOOM], or [LENS_TYPE_ANY]
+     * @return CameraSelector configured for the desired camera
+     */
+    private fun selectCameraUsingFacingAndLens(facing: Int, lensType: Int): CameraSelector {
+        val lensFacing = if (facing == 0) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
+
+        // If no specific lens type is requested, return default camera for facing direction
+        if (lensType == LENS_TYPE_ANY) {
+            return if (facing == 0) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+        }
+
+        // Build a camera selector that filters by both facing and lens characteristics
+        return CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .addCameraFilter { cameraInfos ->
+                val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+
+                val filteredCameras = cameraInfos.filter { cameraInfo ->
+                    try {
+                        // Get the camera ID from CameraInfo
+                        val cameraId = Camera2CameraInfo.from(cameraInfo).cameraId
+                        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+
+                        // Get focal lengths available for this camera
+                        val focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+
+                        if (focalLengths == null || focalLengths.isEmpty()) {
+                            // Without focal length info, we can't determine the lens type.
+                            // Only include this camera if the user requested "any" lens type.
+                            return@filter lensType == LENS_TYPE_ANY
+                        }
+
+                        // Use the first focal length as representative
+                        val focalLength = focalLengths[0]
+                        matchesLensType(focalLength, lensType)
+                    } catch (e: Exception) {
+                        // If we can't get characteristics, include this camera
+                        true
+                    }
+                }
+
+                // If filtering resulted in no cameras, return all cameras with correct facing
+                // to prevent camera binding failures
+                if (filteredCameras.isEmpty()) cameraInfos else filteredCameras
+            }
+            .build()
     }
 
     private fun setScale(call: MethodCall, result: MethodChannel.Result) {
