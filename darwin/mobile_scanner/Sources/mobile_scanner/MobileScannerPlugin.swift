@@ -99,6 +99,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             start(call, result)
         case "toggleTorch":
             toggleTorch(result)
+        case "getSupportedLenses":
+            getSupportedLenses(result)
         case "setScale":
             setScale(call, result)
         case "setFocus":
@@ -349,7 +351,6 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 #endif
     }
 
-
     func start(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         if (device != nil || captureSession != nil) {
             result(FlutterError(code: MobileScannerErrorCodes.ALREADY_STARTED_ERROR,
@@ -365,6 +366,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         let torch:Bool = argReader.bool(key: "torch") ?? false
         let facing:Int = argReader.int(key: "facing") ?? 1
+        let lensType:Int = argReader.int(key: "lensType") ?? -1
         let speed:Int = argReader.int(key: "speed") ?? 0
         let timeoutMs:Int = argReader.int(key: "timeout") ?? 0
         let initialZoom: CGFloat? = {
@@ -386,26 +388,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 #else
         position = AVCaptureDevice.Position.front
 #endif
-        
-        // Open the camera device
-#if os(iOS)
-        if #available(iOS 13.0, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#else
-        if #available(macOS 10.15, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#endif
-        
-        if (device == nil) {
-            device = AVCaptureDevice.devices(for: .video).filter({$0.position == position}).first
-        }
-        
-        if (device == nil) {
-            device = AVCaptureDevice.default(for: .video)
-        }
-        
+
+        // Open the camera device based on position and lens type
+        device = MobileScannerCameraSelector.selectCamera(position: position, lensType: lensType)
+
         if (device == nil) {
             result(FlutterError(code: MobileScannerErrorCodes.NO_CAMERA_ERROR,
                                 message: MobileScannerErrorCodes.NO_CAMERA_ERROR_MESSAGE,
@@ -564,6 +550,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         
         // Ultimate fallback: use the original default format
         return kCVPixelFormatType_32BGRA
+    }
+
+    private func getSupportedLenses(_ result: @escaping FlutterResult) {
+        result(MobileScannerCameraSelector.getSupportedLenses())
     }
 
     /// Turn the torch on.
