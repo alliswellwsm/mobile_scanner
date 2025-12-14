@@ -11,6 +11,31 @@ import VideoToolbox
   import FlutterMacOS
 #endif
 
+/// Constants for camera lens types.
+struct LensType {
+    static let normal = 0
+    static let wide = 1
+    static let zoom = 2
+}
+
+/// Maps an AVCaptureDevice.DeviceType to a LensType value.
+///
+/// - Parameter deviceType: The device type to map
+/// - Returns: The corresponding LensType value, or nil if not a recognized lens type
+@available(iOS 13.0, macOS 10.15, *)
+func lensTypeFrom(deviceType: AVCaptureDevice.DeviceType) -> Int? {
+    switch deviceType {
+    case .builtInWideAngleCamera:
+        return LensType.normal
+    case .builtInUltraWideCamera:
+        return LensType.wide
+    case .builtInTelephotoCamera:
+        return LensType.zoom
+    default:
+        return nil
+    }
+}
+
 public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, FlutterTexture, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     let registry: FlutterTextureRegistry
@@ -357,7 +382,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
      *
      * - Parameters:
      *   - position: The camera position (front or back)
-     *   - lensType: The desired lens type (0 = normal, 1 = wide, 2 = zoom, -1 = any)
+     *   - lensType: The desired lens type (LensType.normal, LensType.wide, LensType.zoom, or any other value for default)
      * - Returns: The selected AVCaptureDevice, or nil if not found
      */
     private func selectCamera(position: AVCaptureDevice.Position, lensType: Int) -> AVCaptureDevice? {
@@ -366,17 +391,14 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             var deviceTypes: [AVCaptureDevice.DeviceType] = []
 
             switch lensType {
-            case 0:
-                // Normal lens - prefer wide angle camera (standard on most phones)
+            case LensType.normal:
                 deviceTypes = [.builtInWideAngleCamera]
-            case 1:
-                // Wide lens - prefer ultra-wide camera
+            case LensType.wide:
                 deviceTypes = [.builtInUltraWideCamera, .builtInWideAngleCamera]
-            case 2:
-                // Zoom lens - prefer telephoto camera
+            case LensType.zoom:
                 deviceTypes = [.builtInTelephotoCamera, .builtInWideAngleCamera]
             default:
-                // lensType == -1: Any lens type - use default discovery order
+                // Any lens type - use default discovery order
                 deviceTypes = [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera]
             }
 
@@ -635,59 +657,28 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         if #available(iOS 13.0, *) {
             var supportedLenses = Set<Int>()
 
-            // Check back cameras
-            let backDevices = AVCaptureDevice.DiscoverySession(
-                deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
-                 mediaType: .video,
-                position: .back
-            ).devices
+            // Check both back and front cameras
+            for position: AVCaptureDevice.Position in [.back, .front] {
+                let devices = AVCaptureDevice.DiscoverySession(
+                    deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
+                    mediaType: .video,
+                    position: position
+                ).devices
 
-            for device in backDevices {
-                switch device.deviceType {
-                case .builtInUltraWideCamera:
-                    supportedLenses.insert(1)  // Wide
-                case .builtInWideAngleCamera:
-                    supportedLenses.insert(0)  // Normal
-                case .builtInTelephotoCamera:
-                    supportedLenses.insert(2)  // Zoom
-                default:
-                    break
+                for device in devices {
+                    if let lensType = lensTypeFrom(deviceType: device.deviceType) {
+                        supportedLenses.insert(lensType)
+                    }
                 }
             }
 
-            // Check front cameras
-            let frontDevices = AVCaptureDevice.DiscoverySession(
-                deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
-                 mediaType: .video,
-                position: .front
-            ).devices
-
-            for device in frontDevices {
-                switch device.deviceType {
-                case .builtInUltraWideCamera:
-                    supportedLenses.insert(1)  // Wide
-                case .builtInWideAngleCamera:
-                    supportedLenses.insert(0)  // Normal
-                case .builtInTelephotoCamera:
-                    supportedLenses.insert(2)  // Zoom
-                default:
-                    break
-                }
-            }
-
-            if supportedLenses.isEmpty {
-                result([])
-            } else {
-                result(Array(supportedLenses))
-            }
+            result(Array(supportedLenses))
         } else {
-            // For iOS < 13.0, return 'any' (-1)
-            result([-1])
+            result([])
         }
-        #else
-            // For macOS, return 'any' (-1)
-            result([-1])
-        #endif
+#else
+        result([])
+#endif
     }
 
     /// Turn the torch on.
