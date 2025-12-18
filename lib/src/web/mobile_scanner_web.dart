@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
+import 'package:mobile_scanner/src/enums/camera_lens_type.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/enums/torch_state.dart';
 import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
@@ -234,6 +235,30 @@ class MobileScannerWeb extends MobileScannerPlatform {
     }
 
     return const SizedBox();
+  }
+
+  @override
+  Future<Set<CameraLensType>> getSupportedLenses() async {
+    if (window.navigator.mediaDevices.isUndefinedOrNull) {
+      return <CameraLensType>{};
+    }
+
+    try {
+      final devices =
+          await window.navigator.mediaDevices.enumerateDevices().toDart;
+
+      final hasVideoInput = devices.toDart.any(
+        (MediaDeviceInfo device) => device.kind == 'videoinput',
+      );
+
+      if (!hasVideoInput) {
+        return <CameraLensType>{};
+      }
+
+      return <CameraLensType>{CameraLensType.any};
+    } on DOMException {
+      return <CameraLensType>{};
+    }
   }
 
   @override
