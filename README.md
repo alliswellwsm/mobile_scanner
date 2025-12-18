@@ -34,6 +34,7 @@ See the example app for detailed implementation information.
 | returnImage  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | scanWindow   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | autoZoom     | :heavy_check_mark: | :x:                | :x:                | :x: |
+| lensType     | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x: |
 
 ## Installation
 
@@ -146,6 +147,23 @@ MobileScanner(
     print(result.barcodes.first.rawValue);
   },
 );
+```
+
+#### Switching lens types
+
+On devices with multiple cameras (normal, wide, zoom), you can switch between lens types:
+
+```dart
+// Toggle through available lens types (normal -> wide -> zoom -> normal)
+await controller.switchCamera(const ToggleLensType());
+
+// Or select a specific lens type
+await controller.switchCamera(
+  const SelectCamera(lensType: CameraLensType.wide),
+);
+
+// Get supported lens types for the current camera
+final Set<CameraLensType> supportedLenses = await controller.getSupportedLenses();
 ```
 
 #### Lifecycle changes
