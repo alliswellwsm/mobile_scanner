@@ -106,20 +106,13 @@ class _SwitchLensButtonState extends State<SwitchLensButton> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          color: Colors.white,
-          iconSize: 32,
-          icon: Icon(_getLensIcon()),
-          onPressed: () => widget.onLensTypeChanged(_getNextLensType()),
-        ),
-        Text(
-          _getLensLabel(),
-          style: const TextStyle(color: Colors.white, fontSize: 10),
-        ),
-      ],
+    return TextButton.icon(
+      onPressed: () => widget.onLensTypeChanged(_getNextLensType()),
+      icon: Icon(_getLensIcon(), color: Colors.white, size: 32),
+      label: Text(
+        _getLensLabel(),
+        style: const TextStyle(color: Colors.white, fontSize: 10),
+      ),
     );
   }
 }

@@ -587,6 +587,8 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   }
 
   Future<void> _toggleLensType() async {
+    // Fetch supported lenses fresh each time to handle dynamic camera changes
+    // (e.g., external cameras being attached/detached).
     final supportedLenses = await getSupportedLenses();
 
     // Filter out 'any' and keep only specific lens types.
@@ -710,7 +712,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   ///
   /// Returns an empty set if the device has no cameras. On platforms
   /// that do not support querying specific lens types, returns a set
-  /// containing only `CameraLensType.any` if cameras are available.
+  /// containing only [CameraLensType.any] if cameras are available.
   ///
   /// This method can be called before starting the scanner.
   ///
