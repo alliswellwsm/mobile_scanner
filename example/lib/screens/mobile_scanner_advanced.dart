@@ -352,11 +352,10 @@ class _MobileScannerAdvancedState extends State<MobileScannerAdvanced> {
                       checked: invertImage,
                       child: Text(_PopupMenuItems.invertImage.name),
                     ),
-                  if (!kIsWeb)
-                    const PopupMenuItem(
-                      value: _PopupMenuItems.showSupportedLenses,
-                      child: Text('Show Supported Lenses'),
-                    ),
+                  const PopupMenuItem(
+                    value: _PopupMenuItems.showSupportedLenses,
+                    child: Text('Show Supported Lenses'),
+                  ),
                   CheckedPopupMenuItem(
                     value: _PopupMenuItems.returnImage,
                     checked: returnImage,
