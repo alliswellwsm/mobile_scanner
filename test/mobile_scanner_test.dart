@@ -45,6 +45,7 @@ void main() {
       const MobileScannerState(
         availableCameras: 2,
         cameraDirection: CameraFacing.back,
+        cameraLensType: CameraLensType.any,
         isInitialized: true,
         isStarting: false,
         isRunning: true,
@@ -104,6 +105,7 @@ void main() {
         const MobileScannerState(
           availableCameras: 2,
           cameraDirection: CameraFacing.back,
+          cameraLensType: CameraLensType.any,
           isInitialized: true,
           isStarting: false,
           isRunning: false,
