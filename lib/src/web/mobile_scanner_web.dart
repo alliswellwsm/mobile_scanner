@@ -244,10 +244,11 @@ class MobileScannerWeb extends MobileScannerPlatform {
     }
 
     try {
-      final devices =
+      final jsDevices =
           await window.navigator.mediaDevices.enumerateDevices().toDart;
+      final devices = jsDevices.toDart;
 
-      final hasVideoInput = devices.toDart.any(
+      final hasVideoInput = devices.any(
         (MediaDeviceInfo device) => device.kind == 'videoinput',
       );
 
