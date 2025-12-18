@@ -470,6 +470,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
         value = value.copyWith(
           availableCameras: viewAttributes.numberOfCameras,
           cameraDirection: viewAttributes.cameraDirection,
+          cameraLensType: options.cameraLensType,
           isInitialized: true,
           isStarting: false,
           isRunning: true,
@@ -604,9 +605,12 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       CameraLensType.zoom,
     ];
 
-    // Find the current lens type (default to normal if unknown).
+    // Find the current lens type from state (default to normal if unknown).
+    final stateLensType = value.cameraLensType;
     final currentLens =
-        lensType == CameraLensType.any ? CameraLensType.normal : lensType;
+        stateLensType == CameraLensType.any
+            ? CameraLensType.normal
+            : stateLensType;
 
     // Find the next available lens in the cycle.
     final currentIndex = lensCycle.indexOf(currentLens);
@@ -643,6 +647,13 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     // If the target direction is unknown or external, do nothing.
     if (targetDirection == CameraFacing.unknown ||
         targetDirection == CameraFacing.external) {
+      return;
+    }
+
+    // Skip if the configuration is already the same to avoid unnecessary
+    // camera restarts and UI flicker.
+    if (targetDirection == value.cameraDirection &&
+        lensType == value.cameraLensType) {
       return;
     }
 
