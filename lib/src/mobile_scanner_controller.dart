@@ -589,9 +589,8 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     final supportedLenses = await getSupportedLenses();
 
     // Filter out 'any' and keep only specific lens types.
-    final specificLenses = supportedLenses
-        .where((lens) => lens != CameraLensType.any)
-        .toList();
+    final specificLenses =
+        supportedLenses.where((lens) => lens != CameraLensType.any).toList();
 
     // Do nothing if there are less than 2 lens types available.
     if (specificLenses.length < 2) {
@@ -606,9 +605,8 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     ];
 
     // Find the current lens type (default to normal if unknown).
-    final currentLens = lensType == CameraLensType.any
-        ? CameraLensType.normal
-        : lensType;
+    final currentLens =
+        lensType == CameraLensType.any ? CameraLensType.normal : lensType;
 
     // Find the next available lens in the cycle.
     final currentIndex = lensCycle.indexOf(currentLens);
