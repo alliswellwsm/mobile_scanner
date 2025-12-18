@@ -1,3 +1,13 @@
+## 7.2.0
+
+**Highlights**
+
+* [Android & iOS] Added support for switching between lens types (normal, wide, zoom) using the `switchCamera()` method with `ToggleLensType` or `SelectCamera` options.
+
+**Improvements**
+
+* Added constants for testing the method channel methods in `MobileScannerMethods` and `MobileScannerEvents`.
+
 ### 7.1.4
 
 * [Apple] Fixed crash on iPhone 17 when starting MobileScanner by checking available pixel formats before setting video output settings. ([#1578](https://github.com/juliansteenbakker/mobile_scanner/issues/1578))
