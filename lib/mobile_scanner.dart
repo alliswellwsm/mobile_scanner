@@ -28,6 +28,7 @@ export 'src/objects/person_name.dart';
 export 'src/objects/phone.dart';
 export 'src/objects/sms.dart';
 export 'src/objects/start_options.dart';
+export 'src/objects/switch_camera_option.dart';
 export 'src/objects/url_bookmark.dart';
 export 'src/objects/wifi.dart';
 export 'src/overlay/barcode_overlay.dart';

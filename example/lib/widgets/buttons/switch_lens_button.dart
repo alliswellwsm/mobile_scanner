@@ -25,7 +25,11 @@ class SwitchLensButton extends StatefulWidget {
 }
 
 class _SwitchLensButtonState extends State<SwitchLensButton> {
-  List<CameraLensType> _availableLenses = [CameraLensType.normal, CameraLensType.wide, CameraLensType.zoom];
+  List<CameraLensType> _availableLenses = [
+    CameraLensType.normal,
+    CameraLensType.wide,
+    CameraLensType.zoom,
+  ];
 
   @override
   void initState() {
@@ -35,9 +39,11 @@ class _SwitchLensButtonState extends State<SwitchLensButton> {
 
   Future<void> _loadSupportedLenses() async {
     try {
-      final Set<CameraLensType> supportedLenses = await widget.controller.getSupportedLenses();
+      final Set<CameraLensType> supportedLenses =
+          await widget.controller.getSupportedLenses();
       // Filter out 'any' from the list and keep only specific lens types
-      final List<CameraLensType> specificLenses = supportedLenses.where((lens) => lens != CameraLensType.any).toList();
+      final List<CameraLensType> specificLenses =
+          supportedLenses.where((lens) => lens != CameraLensType.any).toList();
 
       if (specificLenses.isNotEmpty && mounted) {
         setState(() {
@@ -109,7 +115,10 @@ class _SwitchLensButtonState extends State<SwitchLensButton> {
           icon: Icon(_getLensIcon()),
           onPressed: () => widget.onLensTypeChanged(_getNextLensType()),
         ),
-        Text(_getLensLabel(), style: const TextStyle(color: Colors.white, fontSize: 10)),
+        Text(
+          _getLensLabel(),
+          style: const TextStyle(color: Colors.white, fontSize: 10),
+        ),
       ],
     );
   }

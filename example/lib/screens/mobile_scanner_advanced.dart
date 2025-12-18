@@ -212,22 +212,23 @@ class _MobileScannerAdvancedState extends State<MobileScannerAdvanced> {
     if (controller == null) return;
 
     try {
-      final Set<CameraLensType> supportedLenses = await controller!.getSupportedLenses();
+      final Set<CameraLensType> supportedLenses =
+          await controller!.getSupportedLenses();
       if (!mounted) return;
 
       final String lensNames = supportedLenses
           .map((lens) {
-        switch (lens) {
-          case CameraLensType.normal:
-            return 'Normal';
-          case CameraLensType.wide:
-            return 'Wide/Ultra-Wide';
-          case CameraLensType.zoom:
-            return 'Zoom/Telephoto';
-          case CameraLensType.any:
-            return 'Any (Default)';
-        }
-      })
+            switch (lens) {
+              case CameraLensType.normal:
+                return 'Normal';
+              case CameraLensType.wide:
+                return 'Wide/Ultra-Wide';
+              case CameraLensType.zoom:
+                return 'Zoom/Telephoto';
+              case CameraLensType.any:
+                return 'Any (Default)';
+            }
+          })
           .join('\n');
 
       unawaited(
@@ -235,17 +236,17 @@ class _MobileScannerAdvancedState extends State<MobileScannerAdvanced> {
           context: context,
           builder:
               (context) => AlertDialog(
-            title: const Text('Supported Lenses'),
-            content: Text(
-              'Available camera lenses on this device:\n\n$lensNames',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                title: const Text('Supported Lenses'),
+                content: Text(
+                  'Available camera lenses on this device:\n\n$lensNames',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
-            ],
-          ),
         ),
       );
     } on Exception catch (e) {
@@ -256,15 +257,15 @@ class _MobileScannerAdvancedState extends State<MobileScannerAdvanced> {
           context: context,
           builder:
               (context) => AlertDialog(
-            title: const Text('Error'),
-            content: Text('Could not retrieve supported lenses:\n$e'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                title: const Text('Error'),
+                content: Text('Could not retrieve supported lenses:\n$e'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
-            ],
-          ),
         ),
       );
     }
