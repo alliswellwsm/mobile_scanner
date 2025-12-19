@@ -15,10 +15,6 @@ class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
     private var orientationObserver: NSObjectProtocol?
     private var lastSentOrientation: UIInterfaceOrientation?
 
-    override init() {
-        super.init()
-    }
-
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         self.eventSink = events
 
