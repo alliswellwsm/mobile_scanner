@@ -2,7 +2,7 @@ package dev.steenbakker.mobile_scanner
 
 import android.app.Activity
 import android.content.Context
-import android.content.res.Configuration
+import android.database.ContentObserver
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Handler
@@ -31,6 +31,16 @@ class DeviceOrientationListener(
     // The last received orientation. This is used to prevent duplicate events.
     private var lastOrientation: PlatformChannel.DeviceOrientation? = null
 
+    // Cached auto-rotate setting to avoid querying ContentResolver on every orientation change.
+    private var autoRotateEnabled: Boolean = false
+
+    // Observer for auto-rotate setting changes.
+    private val autoRotateObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            autoRotateEnabled = queryAutoRotateSetting()
+        }
+    }
+
     override fun onListen(event: Any?, eventSink: EventChannel.EventSink?) {
         deviceOrientationEventSink = eventSink
     }
@@ -43,6 +53,13 @@ class DeviceOrientationListener(
      * Start listening to device orientation changes.
      */
     fun start() {
+        autoRotateEnabled = queryAutoRotateSetting()
+        activity.contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+            false,
+            autoRotateObserver
+        )
+
         if (canDetectOrientation()) {
             enable()
         }
@@ -53,12 +70,14 @@ class DeviceOrientationListener(
      */
     fun stop() {
         disable()
+        activity.contentResolver.unregisterContentObserver(autoRotateObserver)
     }
 
     /**
-     * Check if the system's auto-rotate setting is enabled.
+     * Query the system's auto-rotate setting.
+     * Returns false on failure to safely fall back to display rotation.
      */
-    private fun isAutoRotateEnabled(): Boolean {
+    private fun queryAutoRotateSetting(): Boolean {
         return try {
             Settings.System.getInt(
                 activity.contentResolver,
@@ -66,17 +85,16 @@ class DeviceOrientationListener(
                 0
             ) == 1
         } catch (e: Exception) {
-            true
+            false
         }
     }
 
     @Suppress("deprecation")
     private fun getDisplay(): Display {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            activity.display!!
-        } else {
-            (activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.display?.let { return it }
         }
+        return (activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
     }
 
     /**
@@ -84,24 +102,11 @@ class DeviceOrientationListener(
      * This respects the system's rotation lock setting.
      */
     private fun getUIOrientation(): PlatformChannel.DeviceOrientation {
-        val rotation: Int = getDisplay().rotation
-        val orientation: Int = activity.resources.configuration.orientation
-
-        return when (orientation) {
-            Configuration.ORIENTATION_PORTRAIT -> {
-                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90) {
-                    PlatformChannel.DeviceOrientation.PORTRAIT_UP
-                } else {
-                    PlatformChannel.DeviceOrientation.PORTRAIT_DOWN
-                }
-            }
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90) {
-                    PlatformChannel.DeviceOrientation.LANDSCAPE_LEFT
-                } else {
-                    PlatformChannel.DeviceOrientation.LANDSCAPE_RIGHT
-                }
-            }
+        return when (getDisplay().rotation) {
+            Surface.ROTATION_0 -> PlatformChannel.DeviceOrientation.PORTRAIT_UP
+            Surface.ROTATION_90 -> PlatformChannel.DeviceOrientation.LANDSCAPE_LEFT
+            Surface.ROTATION_180 -> PlatformChannel.DeviceOrientation.PORTRAIT_DOWN
+            Surface.ROTATION_270 -> PlatformChannel.DeviceOrientation.LANDSCAPE_RIGHT
             else -> PlatformChannel.DeviceOrientation.PORTRAIT_UP
         }
     }
@@ -113,7 +118,7 @@ class DeviceOrientationListener(
 
         val newOrientation: PlatformChannel.DeviceOrientation
 
-        if (isAutoRotateEnabled()) {
+        if (autoRotateEnabled) {
             newOrientation = when (orientation) {
                 in 45..134 -> PlatformChannel.DeviceOrientation.LANDSCAPE_RIGHT
                 in 135..224 -> PlatformChannel.DeviceOrientation.PORTRAIT_DOWN
