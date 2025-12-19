@@ -10,13 +10,12 @@
   import UIKit
 
 class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
-    
+
     private var eventSink: FlutterEventSink?
     private var orientationObserver: NSObjectProtocol?
-    private let onOrientationChanged: ((UIDeviceOrientation) -> Void)?
-    
-    init(onOrientationChanged: ((UIDeviceOrientation) -> Void)? = nil) {
-        self.onOrientationChanged = onOrientationChanged
+    private var lastSentOrientation: UIInterfaceOrientation?
+
+    override init() {
         super.init()
     }
 
@@ -44,25 +43,55 @@ class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
 
         UIDevice.current.endGeneratingDeviceOrientationNotifications()
         eventSink = nil
+        lastSentOrientation = nil
         return nil
     }
 
     private func sendCurrentOrientation() {
         guard let sink = eventSink else { return }
 
-        let orientation = UIDevice.current.orientation
-        
-        if orientation == .faceUp || orientation == .faceDown {
-            // Do not change when oriented flat.
-            return
-        }
+        // Use interface orientation instead of device orientation
+        // This respects Flutter's setPreferredOrientations
+        if #available(iOS 13.0, *) {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+                return
+            }
 
-        if (onOrientationChanged != nil) {
-            onOrientationChanged!(orientation)
-        }
+            let interfaceOrientation = windowScene.interfaceOrientation
 
-        let orientationString = orientation.toOrientationString
-        sink(orientationString)
+            // Only send event if interface orientation has changed
+            if lastSentOrientation == interfaceOrientation {
+                return
+            }
+
+            lastSentOrientation = interfaceOrientation
+
+            let orientationString: String
+            switch interfaceOrientation {
+            case .portrait:
+                orientationString = "PORTRAIT_UP"
+            case .portraitUpsideDown:
+                orientationString = "PORTRAIT_DOWN"
+            case .landscapeLeft:
+                orientationString = "LANDSCAPE_LEFT"
+            case .landscapeRight:
+                orientationString = "LANDSCAPE_RIGHT"
+            default:
+                return
+            }
+
+            sink(orientationString)
+        } else {
+            // Fallback for iOS < 13: use device orientation
+            let orientation = UIDevice.current.orientation
+
+            if orientation == .faceUp || orientation == .faceDown {
+                return
+            }
+
+            let orientationString = orientation.toOrientationString
+            sink(orientationString)
+        }
     }
 }
 

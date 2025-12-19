@@ -48,7 +48,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     var standardZoomFactor: CGFloat = 1
     
 #if os(iOS)
-    var deviceOrientation: UIDeviceOrientation = UIDeviceOrientation.unknown
+    var interfaceOrientationObserver: NSObjectProtocol?
+    var currentVideoOrientation: AVCaptureVideoOrientation = .portrait
 #endif
     
     private var stopped: Bool {
@@ -76,11 +77,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         registrar.addMethodCallDelegate(instance, channel: method)
         event.setStreamHandler(instance)
-        
+
 #if os(iOS)
         let orientationEvent = FlutterEventChannel(name:
                                             "dev.steenbakker.mobile_scanner/scanner/deviceOrientation", binaryMessenger: messenger)
-        orientationEvent.setStreamHandler(DeviceOrientationStreamHandler(onOrientationChanged: instance.setDeviceOrientation))
+        orientationEvent.setStreamHandler(DeviceOrientationStreamHandler())
 #endif
     }
     
@@ -450,6 +451,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         captureSession!.addOutput(videoOutput)
         let deviceVideoOrientation = self.getVideoOrientation()
 
+#if os(iOS)
+        // Store initial orientation
+        currentVideoOrientation = deviceVideoOrientation
+#endif
+
         if let connection = videoOutput.connections.first {
             if connection.isVideoOrientationSupported {
                 connection.videoOrientation = deviceVideoOrientation
@@ -461,6 +467,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         }
 
         captureSession!.commitConfiguration()
+
+#if os(iOS)
+        // Set up observer to update camera orientation when interface orientation changes
+        setupInterfaceOrientationObserver()
+#endif
 
         DispatchQueue.global(qos: .background).async {
             self.captureSession!.startRunning()
@@ -686,27 +697,45 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
 #if os(iOS)
-    /// Set the device orientation if it differs from previous orientation
-    func setDeviceOrientation(orientation: UIDeviceOrientation) {
-        if (device == nil || deviceOrientation == orientation) {
+    /// Set up observer for interface orientation changes (respects app orientation lock)
+    private func setupInterfaceOrientationObserver() {
+        // Temporarily disabled to debug stretching issue
+        // The camera preview orientation is set once at startup and should not change
+        // unless the interface orientation actually changes (which respects Flutter's orientation lock)
+    }
+
+    /// Remove interface orientation observer
+    private func removeInterfaceOrientationObserver() {
+        if let observer = interfaceOrientationObserver {
+            NotificationCenter.default.removeObserver(observer)
+            interfaceOrientationObserver = nil
+        }
+    }
+
+    /// Update video orientation based on current interface orientation
+    /// This respects the app's orientation lock settings
+    private func updateVideoOrientationFromInterfaceOrientation() {
+        guard let videoOutput = captureSession?.outputs.compactMap({ $0 as? AVCaptureVideoDataOutput }).first else {
             return
         }
 
-        deviceOrientation = orientation
-        updateOrientation(orientation: orientation)
-    }
+        // Get the current interface orientation (respects Flutter's setPreferredOrientations)
+        let newVideoOrientation = getVideoOrientation()
 
-    /// Update the device orientation of the first open video output
-    func updateOrientation(orientation: UIDeviceOrientation) {
-        if let videoOutput = captureSession!.outputs.compactMap({ $0 as? AVCaptureVideoDataOutput }).first {
-            for connection in videoOutput.connections {
-                if connection.isVideoOrientationSupported {
-                    connection.videoOrientation = orientation.videoOrientation
-                }
+        // Only update if the orientation has actually changed
+        // This prevents unnecessary updates when device rotates but app is locked to one orientation
+        if newVideoOrientation == currentVideoOrientation {
+            return
+        }
+
+        currentVideoOrientation = newVideoOrientation
+
+        for connection in videoOutput.connections {
+            if connection.isVideoOrientationSupported {
+                connection.videoOrientation = newVideoOrientation
             }
         }
     }
-    
 #endif
 
     /// Reset the zoom factor of the camera
@@ -826,6 +855,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
     private func releaseCamera() {
+#if os(iOS)
+        // Remove interface orientation observer
+        removeInterfaceOrientationObserver()
+#endif
+
         if let captureSession = captureSession {
             captureSession.stopRunning()
             for input in captureSession.inputs {
@@ -834,10 +868,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             for output in captureSession.outputs {
                 captureSession.removeOutput(output)
             }
-            
+
             self.captureSession = nil
         }
-        
+
         if let device = device {
             device.removeObserver(self, forKeyPath: #keyPath(AVCaptureDevice.torchMode))
 #if os(iOS)
