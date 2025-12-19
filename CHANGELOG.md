@@ -11,6 +11,7 @@
 **Bug Fixes**
 
 * [Android] Fixed an issue where the app orientation handling was not respecting auto-rotate settings
+* [Apple] Fixed a bug where the barcode type results did not have a value.
 
 ### 7.1.4
 
