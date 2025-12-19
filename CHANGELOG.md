@@ -8,6 +8,10 @@
 
 * Added constants for testing the method channel methods in `MobileScannerMethods` and `MobileScannerEvents`.
 
+**Bug Fixes**
+
+* [Android] Fixed an issue where the app orientation handling was not respecting auto-rotate settings
+
 ### 7.1.4
 
 * [Apple] Fixed crash on iPhone 17 when starting MobileScanner by checking available pixel formats before setting video output settings. ([#1578](https://github.com/juliansteenbakker/mobile_scanner/issues/1578))
