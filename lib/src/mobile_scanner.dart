@@ -353,7 +353,7 @@ class _MobileScannerState extends State<MobileScanner>
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // TODO: use a RenderObject widget subclass, to avoid side effects in build
+            // TODO(navaronbracke): use a RenderObject to avoid side effect
             _maybeUpdateScanWindow(value, constraints);
 
             final overlay = widget.overlayBuilder?.call(context, constraints);

@@ -11,7 +11,7 @@ import 'package:mobile_scanner/src/mobile_scanner_view_attributes.dart';
 import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 
-// TODO: add more tests to verify actual behavior of switchCamera() with various options
+// TODO(navaronbracke): add more tests for switchCamera
 // - toggle direction, select camera, walk lenses
 
 void main() {

@@ -40,7 +40,7 @@ void main() {
 
       final supportedLense = await controller.getSupportedLenses();
 
-      expectLater(supportedLense, {CameraLensType.wide, CameraLensType.normal});
+      expect(supportedLense, {CameraLensType.wide, CameraLensType.normal});
     });
   });
 }

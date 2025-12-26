@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
 
 /// Calculate the scaling ratios for width and height to fit the provided
-/// [cameraPreviewSize] into the specified [size], based on the specified [boxFit].
+/// [cameraPreviewSize] into the specified [size],
+/// based on the specified [boxFit].
 ///
 /// Returns a record containing the width and height scaling ratios.
 @Deprecated('Use ScanWindowUtils.calculateBoxFitRatio instead.')
@@ -14,7 +15,7 @@ import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
   Size cameraPreviewSize,
   Size size,
 ) {
-  // TODO: remove the deprecated method in the next release
+  // TODO(navaronbracke): remove the deprecated method in the next release
   return ScanWindowUtils.calculateBoxFitRatio(
     boxFit: boxFit,
     cameraPreviewSize: cameraPreviewSize,

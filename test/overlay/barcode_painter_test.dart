@@ -47,11 +47,7 @@ void main() {
     expect(
       box,
       paints
-        ..path(
-          color: Colors.blue,
-          style: PaintingStyle.stroke,
-          strokeWidth: 4.0,
-        )
+        ..path(color: Colors.blue, style: PaintingStyle.stroke, strokeWidth: 4)
         ..save()
         ..translate(x: 35, y: 35)
         ..rotate()
@@ -100,7 +96,7 @@ void main() {
     expect(box, paintsNothing);
   });
 
-  // TODO: this does not test all combinations yet
+  // TODO(navaronbracke): this does not test all combinations yet
   test('BarcodePainter shouldRepaint returns true when properties change', () {
     final textPainter = TextPainter(
       textAlign: TextAlign.center,
