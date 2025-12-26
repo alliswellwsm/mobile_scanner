@@ -86,6 +86,63 @@ void main() {
           );
         }
       });
+
+      test('handles out of range type value', () {
+        final address = Address.fromNative(<Object?, Object?>{
+          'type': 999,
+        });
+
+        expect(address.type, AddressType.unknown);
+      });
+
+      test('handles negative type value', () {
+        final address = Address.fromNative(<Object?, Object?>{
+          'type': -1,
+        });
+
+        expect(address.type, AddressType.unknown);
+      });
+
+      test('creates instance with special characters in address lines', () {
+        final address = Address.fromNative(<Object?, Object?>{
+          'addressLines': <Object?>[
+            '123 Main St, Apt #4',
+            'City & State',
+            'Country: USA',
+          ],
+        });
+
+        expect(address.addressLines, [
+          '123 Main St, Apt #4',
+          'City & State',
+          'Country: USA',
+        ]);
+      });
+
+      test('creates instance with Unicode characters in address lines', () {
+        final address = Address.fromNative(<Object?, Object?>{
+          'addressLines': <Object?>[
+            '東京都渋谷区',
+            'Müller Straße 42',
+            'Café de la Paix',
+          ],
+        });
+
+        expect(address.addressLines, [
+          '東京都渋谷区',
+          'Müller Straße 42',
+          'Café de la Paix',
+        ]);
+      });
+
+      test('creates instance with very long address line', () {
+        final longAddress = 'A' * 1000;
+        final address = Address.fromNative(<Object?, Object?>{
+          'addressLines': <Object?>[longAddress],
+        });
+
+        expect(address.addressLines.first.length, 1000);
+      });
     });
   });
 }

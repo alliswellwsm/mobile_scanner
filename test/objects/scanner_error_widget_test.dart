@@ -55,6 +55,68 @@ void main() {
       expect(icon.color, Colors.white);
     });
 
+    testWidgets('displays error code message', (tester) async {
+      const error = MobileScannerException(
+        errorCode: MobileScannerErrorCode.permissionDenied,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ScannerErrorWidget(error: error)),
+        ),
+      );
+
+      expect(
+        find.text(MobileScannerErrorCode.permissionDenied.message),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('displays error details message when available', (
+      tester,
+    ) async {
+      const error = MobileScannerException(
+        errorCode: MobileScannerErrorCode.genericError,
+        errorDetails: MobileScannerErrorDetails(
+          message: 'Detailed error message',
+        ),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ScannerErrorWidget(error: error)),
+        ),
+      );
+
+      expect(find.text('Detailed error message'), findsOneWidget);
+    });
+
+    testWidgets('displays both error code and details when available', (
+      tester,
+    ) async {
+      const error = MobileScannerException(
+        errorCode: MobileScannerErrorCode.controllerAlreadyInitialized,
+        errorDetails: MobileScannerErrorDetails(
+          message: 'Controller was initialized twice',
+        ),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ScannerErrorWidget(error: error)),
+        ),
+      );
+
+      expect(
+        find.text(MobileScannerErrorCode.controllerAlreadyInitialized.message),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Controller was initialized twice'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('centers content vertically and horizontally', (tester) async {
       const error = MobileScannerException(
         errorCode: MobileScannerErrorCode.genericError,
@@ -100,12 +162,14 @@ void main() {
         );
 
         expect(find.byIcon(Icons.error), findsOneWidget);
+        expect(find.text(errorCode.message), findsOneWidget);
       }
     });
 
-    testWidgets('works with error without details', (tester) async {
+    testWidgets('handles error details with null message', (tester) async {
       const error = MobileScannerException(
-        errorCode: MobileScannerErrorCode.controllerAlreadyInitialized,
+        errorCode: MobileScannerErrorCode.genericError,
+        errorDetails: MobileScannerErrorDetails(),
       );
 
       await tester.pumpWidget(
@@ -114,7 +178,13 @@ void main() {
         ),
       );
 
-      expect(find.byType(ScannerErrorWidget), findsOneWidget);
+      // Should only find the error code message, not an additional details text
+      final textWidgets = tester.widgetList<Text>(find.byType(Text));
+      expect(textWidgets.length, 1);
+      expect(
+        find.text(MobileScannerErrorCode.genericError.message),
+        findsOneWidget,
+      );
     });
   });
 }

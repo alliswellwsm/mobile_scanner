@@ -80,6 +80,49 @@ void main() {
         expect(phone.number, isNull);
         expect(phone.type, PhoneType.home);
       });
+
+      test('handles out of range type value', () {
+        final phone = Phone.fromNative(<Object?, Object?>{
+          'type': 999,
+        });
+
+        expect(phone.type, PhoneType.unknown);
+      });
+
+      test('handles negative type value', () {
+        final phone = Phone.fromNative(<Object?, Object?>{
+          'type': -1,
+        });
+
+        expect(phone.type, PhoneType.unknown);
+      });
+
+      test('creates instance with international phone number', () {
+        final phone = Phone.fromNative(<Object?, Object?>{
+          'number': '+44 20 7946 0958',
+          'type': 4,
+        });
+
+        expect(phone.number, '+44 20 7946 0958');
+        expect(phone.type, PhoneType.mobile);
+      });
+
+      test('creates instance with phone number with special characters', () {
+        final phone = Phone.fromNative(<Object?, Object?>{
+          'number': '(555) 123-4567 ext. 890',
+        });
+
+        expect(phone.number, '(555) 123-4567 ext. 890');
+      });
+
+      test('creates instance with very long phone number', () {
+        final longNumber = '1' * 50;
+        final phone = Phone.fromNative(<Object?, Object?>{
+          'number': longNumber,
+        });
+
+        expect(phone.number?.length, 50);
+      });
     });
   });
 }

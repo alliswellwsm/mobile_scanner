@@ -118,6 +118,67 @@ void main() {
         expect(event.status, isNull);
         expect(event.summary, isNull);
       });
+
+      test('creates instance with date including timezone', () {
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'start': '2024-01-15T10:00:00Z',
+          'end': '2024-01-15T11:00:00Z',
+        });
+
+        expect(event.start, DateTime.utc(2024, 1, 15, 10));
+        expect(event.end, DateTime.utc(2024, 1, 15, 11));
+      });
+
+      test('creates instance with date only (no time)', () {
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'start': '2024-01-15',
+        });
+
+        expect(event.start, DateTime(2024, 1, 15));
+      });
+
+      test('creates instance with special characters in text fields', () {
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'description': 'Meeting & Discussion: Q1 Goals',
+          'location': 'Room #42 (2nd Floor)',
+          'organizer': 'john.doe@example.com',
+          'summary': 'Team Meeting - "Quarterly Review"',
+        });
+
+        expect(event.description, 'Meeting & Discussion: Q1 Goals');
+        expect(event.location, 'Room #42 (2nd Floor)');
+        expect(event.organizer, 'john.doe@example.com');
+        expect(event.summary, 'Team Meeting - "Quarterly Review"');
+      });
+
+      test('creates instance with Unicode characters', () {
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'description': '会議の説明',
+          'location': 'Büro München',
+          'summary': "Réunion d'équipe",
+        });
+
+        expect(event.description, '会議の説明');
+        expect(event.location, 'Büro München');
+        expect(event.summary, "Réunion d'équipe");
+      });
+
+      test('creates instance with very long description', () {
+        final longDescription = 'A' * 5000;
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'description': longDescription,
+        });
+
+        expect(event.description?.length, 5000);
+      });
+
+      test('handles partial date string gracefully', () {
+        final event = CalendarEvent.fromNative(<Object?, Object?>{
+          'start': '2024-01',
+        });
+
+        expect(event.start, isNull);
+      });
     });
   });
 }
