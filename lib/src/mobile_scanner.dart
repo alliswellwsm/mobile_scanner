@@ -160,7 +160,8 @@ class MobileScanner extends StatefulWidget {
   }
 }
 
-class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserver {
+class _MobileScannerState extends State<MobileScanner>
+    with WidgetsBindingObserver {
   /// The controller for this [MobileScanner] widget.
   late final MobileScannerController controller;
 
@@ -181,7 +182,8 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
     // we must assume every start is a hot-restart. Related issue:
     // https://github.com/flutter/flutter/issues/10437
     if (kDebugMode) {
-      if (MobileScannerPlatform.instance case final MethodChannelMobileScanner implementation) {
+      if (MobileScannerPlatform.instance
+          case final MethodChannelMobileScanner implementation) {
         try {
           await implementation.stop(force: true);
         } on Exception catch (e) {
@@ -196,7 +198,11 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
     }
 
     if (widget.onDetect != null) {
-      _subscription = controller.barcodes.listen(widget.onDetect, onError: widget.onDetectError, cancelOnError: false);
+      _subscription = controller.barcodes.listen(
+        widget.onDetect,
+        onError: widget.onDetectError,
+        cancelOnError: false,
+      );
     }
 
     if (controller.autoStart) {
@@ -223,7 +229,10 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
   }
 
   /// Calculate the scan window based on the given [constraints].
-  void _maybeUpdateScanWindow(MobileScannerState scannerState, BoxConstraints constraints) {
+  void _maybeUpdateScanWindow(
+    MobileScannerState scannerState,
+    BoxConstraints constraints,
+  ) {
     // No scan window is requested.
     if (widget.scanWindow == null && _scanWindow == null) {
       return;
@@ -239,12 +248,13 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
       return;
     }
 
-    final newScanWindow = ScanWindowUtils.calculateScanWindowRelativeToTextureInPercentage(
-      widget.fit,
-      widgetScanWindow,
-      textureSize: scannerState.size,
-      widgetSize: constraints.biggest,
-    );
+    final newScanWindow =
+        ScanWindowUtils.calculateScanWindowRelativeToTextureInPercentage(
+          widget.fit,
+          widgetScanWindow,
+          textureSize: scannerState.size,
+          widgetSize: constraints.biggest,
+        );
 
     // The scan window was never set before.
     // Set the initial scan window.
@@ -281,7 +291,8 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
     final dy = (newScanWindow.height - currentScanWindow.height).abs();
 
     // The new scan window has changed enough, allow updating the scan window.
-    if (dx >= widget.scanWindowUpdateThreshold || dy >= widget.scanWindowUpdateThreshold) {
+    if (dx >= widget.scanWindowUpdateThreshold ||
+        dy >= widget.scanWindowUpdateThreshold) {
       _scanWindow = newScanWindow;
 
       unawaited(controller.updateScanWindow(_scanWindow));
@@ -313,13 +324,25 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Padding(padding: EdgeInsets.only(bottom: 16), child: Icon(Icons.error, color: Colors.white)),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Icon(Icons.error, color: Colors.white),
+                  ),
                   if (kDebugMode) ...[
-                    Text(error.errorCode.message, style: const TextStyle(color: Colors.white)),
+                    Text(
+                      error.errorCode.message,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     if (error.errorDetails?.message case final String message)
-                      Text(message, style: const TextStyle(color: Colors.white)),
+                      Text(
+                        message,
+                        style: const TextStyle(color: Colors.white),
+                      ),
                   ] else
-                    Text(MobileScannerErrorCode.genericError.message, style: const TextStyle(color: Colors.white)),
+                    Text(
+                      MobileScannerErrorCode.genericError.message,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                 ],
               ),
             ),
@@ -338,7 +361,10 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
             final Widget scannerWidget = ClipRect(
               child: SizedBox.fromSize(
                 size: constraints.biggest,
-                child: FittedBox(fit: widget.fit, child: CameraPreview(controller)),
+                child: FittedBox(
+                  fit: widget.fit,
+                  child: CameraPreview(controller),
+                ),
               ),
             );
 
@@ -351,7 +377,9 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
                     final relativeX = details.globalPosition.dx / size.width;
                     final relativeY = details.globalPosition.dy / size.height;
 
-                    await controller.setFocusPoint(Offset(relativeX, relativeY));
+                    await controller.setFocusPoint(
+                      Offset(relativeX, relativeY),
+                    );
                   },
                 );
               },
@@ -368,7 +396,10 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
             return Stack(
               alignment: Alignment.center,
               children: <Widget>[
-                if (widget.tapToFocus) tapToFocusScannerWidget else scannerWidget,
+                if (widget.tapToFocus)
+                  tapToFocusScannerWidget
+                else
+                  scannerWidget,
                 IgnorePointer(ignoring: widget.tapToFocus, child: overlay),
               ],
             );

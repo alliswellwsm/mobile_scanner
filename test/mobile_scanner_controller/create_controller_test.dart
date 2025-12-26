@@ -13,7 +13,10 @@ void main() {
 
   test('controller can be created with all lens types', () {
     for (final lensType in CameraLensType.values) {
-      final controller = MobileScannerController(autoStart: false, lensType: lensType);
+      final controller = MobileScannerController(
+        autoStart: false,
+        lensType: lensType,
+      );
 
       expect(controller.lensType, lensType);
     }

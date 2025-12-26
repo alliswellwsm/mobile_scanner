@@ -10,7 +10,9 @@ void main() {
 
   group('getSupportedLenses', () {
     test('throws when controller is disposed', () async {
-      MobileScannerPlatform.instance = FakeMobileScannerPlatform(const {CameraLensType.any});
+      MobileScannerPlatform.instance = FakeMobileScannerPlatform(const {
+        CameraLensType.any,
+      });
 
       final controller = MobileScannerController(autoStart: false);
 
@@ -29,7 +31,10 @@ void main() {
     });
 
     test('returns supported lenses', () async {
-      MobileScannerPlatform.instance = FakeMobileScannerPlatform(const {CameraLensType.wide, CameraLensType.normal});
+      MobileScannerPlatform.instance = FakeMobileScannerPlatform(const {
+        CameraLensType.wide,
+        CameraLensType.normal,
+      });
 
       final controller = MobileScannerController(autoStart: false);
 
@@ -41,7 +46,8 @@ void main() {
 }
 
 class FakeMobileScannerPlatform extends MobileScannerPlatform {
-  FakeMobileScannerPlatform(Set<CameraLensType> supportedLenses) : _supportedLenses = supportedLenses;
+  FakeMobileScannerPlatform(Set<CameraLensType> supportedLenses)
+    : _supportedLenses = supportedLenses;
 
   final Set<CameraLensType> _supportedLenses;
 

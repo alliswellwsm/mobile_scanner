@@ -9,9 +9,17 @@ import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
 ///
 /// Returns a record containing the width and height scaling ratios.
 @Deprecated('Use ScanWindowUtils.calculateBoxFitRatio instead.')
-({double widthRatio, double heightRatio}) calculateBoxFitRatio(BoxFit boxFit, Size cameraPreviewSize, Size size) {
+({double widthRatio, double heightRatio}) calculateBoxFitRatio(
+  BoxFit boxFit,
+  Size cameraPreviewSize,
+  Size size,
+) {
   // TODO: remove the deprecated method in the next release
-  return ScanWindowUtils.calculateBoxFitRatio(boxFit: boxFit, cameraPreviewSize: cameraPreviewSize, size: size);
+  return ScanWindowUtils.calculateBoxFitRatio(
+    boxFit: boxFit,
+    cameraPreviewSize: cameraPreviewSize,
+    size: size,
+  );
 }
 
 /// A [CustomPainter] that draws the barcode as an outlined barcode box with
@@ -63,14 +71,18 @@ class BarcodePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (barcodeCorners.length < 4 || barcodeSize.isEmpty || cameraPreviewSize.isEmpty) {
+    if (barcodeCorners.length < 4 ||
+        barcodeSize.isEmpty ||
+        cameraPreviewSize.isEmpty) {
       return;
     }
 
     final isLandscape =
-        deviceOrientation == DeviceOrientation.landscapeLeft || deviceOrientation == DeviceOrientation.landscapeRight;
+        deviceOrientation == DeviceOrientation.landscapeLeft ||
+        deviceOrientation == DeviceOrientation.landscapeRight;
 
-    final adjustedCameraPreviewSize = isLandscape ? cameraPreviewSize.flipped : cameraPreviewSize;
+    final adjustedCameraPreviewSize =
+        isLandscape ? cameraPreviewSize.flipped : cameraPreviewSize;
 
     final ratios = ScanWindowUtils.calculateBoxFitRatio(
       boxFit: boxFit,
@@ -78,12 +90,18 @@ class BarcodePainter extends CustomPainter {
       size: size,
     );
 
-    final horizontalPadding = (adjustedCameraPreviewSize.width * ratios.widthRatio - size.width) / 2;
-    final verticalPadding = (adjustedCameraPreviewSize.height * ratios.heightRatio - size.height) / 2;
+    final horizontalPadding =
+        (adjustedCameraPreviewSize.width * ratios.widthRatio - size.width) / 2;
+    final verticalPadding =
+        (adjustedCameraPreviewSize.height * ratios.heightRatio - size.height) /
+        2;
 
     final adjustedOffset = <Offset>[
       for (final offset in barcodeCorners)
-        Offset(offset.dx * ratios.widthRatio - horizontalPadding, offset.dy * ratios.heightRatio - verticalPadding),
+        Offset(
+          offset.dx * ratios.widthRatio - horizontalPadding,
+          offset.dy * ratios.heightRatio - verticalPadding,
+        ),
     ];
 
     if (adjustedOffset.length < 4) return;
@@ -105,10 +123,15 @@ class BarcodePainter extends CustomPainter {
     final center = Offset(centerX, centerY);
 
     // Calculate rotation angle
-    final angle = math.atan2(adjustedOffset[1].dy - adjustedOffset[0].dy, adjustedOffset[1].dx - adjustedOffset[0].dx);
+    final angle = math.atan2(
+      adjustedOffset[1].dy - adjustedOffset[0].dy,
+      adjustedOffset[1].dx - adjustedOffset[0].dx,
+    );
 
     // Set a smaller font size with auto-resizing logic
-    final textSize = (barcodeSize.width * ratios.widthRatio) * 0.08; // Scales with barcode size
+    final textSize =
+        (barcodeSize.width * ratios.widthRatio) *
+        0.08; // Scales with barcode size
     const double minTextSize = 6; // Minimum readable size
     const double maxTextSize = 12; // Maximum size
     final finalTextSize = textSize.clamp(minTextSize, maxTextSize);
@@ -135,14 +158,24 @@ class BarcodePainter extends CustomPainter {
       ..rotate(angle) // Rotate the text to match the barcode
       ..translate(-center.dx, -center.dy);
 
-    final textRect = Rect.fromCenter(center: center, width: textWidth * 1.1, height: textHeight * 1.1);
+    final textRect = Rect.fromCenter(
+      center: center,
+      width: textWidth * 1.1,
+      height: textHeight * 1.1,
+    );
 
-    final textBackground = RRect.fromRectAndRadius(textRect, const Radius.circular(6));
+    final textBackground = RRect.fromRectAndRadius(
+      textRect,
+      const Radius.circular(6),
+    );
 
     final textBgPaint = Paint()..color = Colors.white.withValues(alpha: 0.8);
     canvas.drawRRect(textBackground, textBgPaint);
 
-    textPainter.paint(canvas, Offset(center.dx - textWidth / 2, center.dy - textHeight / 2));
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textWidth / 2, center.dy - textHeight / 2),
+    );
 
     canvas.restore();
   }

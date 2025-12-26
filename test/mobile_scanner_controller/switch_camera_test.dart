@@ -35,24 +35,27 @@ void main() {
       );
     });
 
-    test('throws when controller is not initialized and then disposed', () async {
-      MobileScannerPlatform.instance = FakeMobileScannerPlatform();
+    test(
+      'throws when controller is not initialized and then disposed',
+      () async {
+        MobileScannerPlatform.instance = FakeMobileScannerPlatform();
 
-      final controller = MobileScannerController(autoStart: false);
+        final controller = MobileScannerController(autoStart: false);
 
-      await controller.dispose();
+        await controller.dispose();
 
-      expect(
-        controller.switchCamera(),
-        throwsA(
-          isA<MobileScannerException>().having(
-            (e) => e.errorCode,
-            'errorCode',
-            MobileScannerErrorCode.controllerDisposed,
+        expect(
+          controller.switchCamera(),
+          throwsA(
+            isA<MobileScannerException>().having(
+              (e) => e.errorCode,
+              'errorCode',
+              MobileScannerErrorCode.controllerDisposed,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('throws when controller is started and then disposed', () async {
       MobileScannerPlatform.instance = FakeMobileScannerPlatform();
@@ -80,7 +83,8 @@ class FakeMobileScannerPlatform extends MobileScannerPlatform {
   Stream<BarcodeCapture?> get barcodesStream => const Stream.empty();
 
   @override
-  Stream<TorchState> get torchStateStream => Stream.value(TorchState.unavailable);
+  Stream<TorchState> get torchStateStream =>
+      Stream.value(TorchState.unavailable);
 
   @override
   Stream<double> get zoomScaleStateStream => Stream.value(1);
@@ -100,7 +104,11 @@ class FakeMobileScannerPlatform extends MobileScannerPlatform {
 
   @override
   Future<Set<CameraLensType>> getSupportedLenses() {
-    return Future.value({CameraLensType.normal, CameraLensType.wide, CameraLensType.zoom});
+    return Future.value({
+      CameraLensType.normal,
+      CameraLensType.wide,
+      CameraLensType.zoom,
+    });
   }
 
   @override

@@ -10,7 +10,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('onDetect is notified of scanned barcodes', (WidgetTester tester) async {
+  testWidgets('onDetect is notified of scanned barcodes', (
+    WidgetTester tester,
+  ) async {
     final fakePlatform = FakeMobileScannerPlatform();
 
     MobileScannerPlatform.instance = fakePlatform;
@@ -30,7 +32,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    const barcodeCapture = BarcodeCapture(barcodes: [Barcode(rawValue: '12345')]);
+    const barcodeCapture = BarcodeCapture(
+      barcodes: [Barcode(rawValue: '12345')],
+    );
 
     fakePlatform.addBarcode(barcodeCapture);
     await tester.pumpAndSettle();
@@ -40,13 +44,15 @@ void main() {
 }
 
 class FakeMobileScannerPlatform extends MobileScannerPlatform {
-  final StreamController<BarcodeCapture> _barcodeStreamController = StreamController<BarcodeCapture>.broadcast();
+  final StreamController<BarcodeCapture> _barcodeStreamController =
+      StreamController<BarcodeCapture>.broadcast();
 
   @override
   Stream<BarcodeCapture?> get barcodesStream => _barcodeStreamController.stream;
 
   @override
-  Stream<TorchState> get torchStateStream => Stream.value(TorchState.unavailable);
+  Stream<TorchState> get torchStateStream =>
+      Stream.value(TorchState.unavailable);
 
   @override
   Stream<double> get zoomScaleStateStream => Stream.value(1);
