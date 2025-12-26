@@ -15,6 +15,7 @@
 * [Android] Fixed an issue where the app orientation handling was not respecting auto-rotate settings
 * [Apple] Fixed a bug where the barcode type results did not have a value.
 * Fixed a bug where taps were ignored on the scanner widget.
+* Fixed a bug where a controller that was only disposed would throw an incorrect error code.
 
 ### 7.1.4
 
