@@ -28,12 +28,14 @@ void main() {
       );
     });
 
-    test('returns supported lenses', () {
+    test('returns supported lenses', () async {
       MobileScannerPlatform.instance = FakeMobileScannerPlatform(const {CameraLensType.wide, CameraLensType.normal});
 
       final controller = MobileScannerController(autoStart: false);
 
-      expectLater(controller.getSupportedLenses, {CameraLensType.wide, CameraLensType.normal});
+      final supportedLense = await controller.getSupportedLenses();
+
+      expectLater(supportedLense, {CameraLensType.wide, CameraLensType.normal});
     });
   });
 }

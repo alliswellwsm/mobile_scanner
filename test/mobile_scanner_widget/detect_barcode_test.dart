@@ -46,6 +46,12 @@ class FakeMobileScannerPlatform extends MobileScannerPlatform {
   Stream<BarcodeCapture?> get barcodesStream => _barcodeStreamController.stream;
 
   @override
+  Stream<TorchState> get torchStateStream => Stream.value(TorchState.unavailable);
+
+  @override
+  Stream<double> get zoomScaleStateStream => Stream.value(1);
+
+  @override
   Future<MobileScannerViewAttributes> start(StartOptions startOptions) {
     return Future.value(
       const MobileScannerViewAttributes(

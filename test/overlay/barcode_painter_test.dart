@@ -5,6 +5,7 @@ import 'package:mobile_scanner/src/overlay/barcode_painter.dart';
 
 void main() {
   testWidgets('BarcodePainter draws barcode outline and text correctly', (WidgetTester tester) async {
+    final painterKey = UniqueKey();
     final textPainter = TextPainter(textAlign: TextAlign.center, textDirection: TextDirection.ltr);
     final barcodePainter = BarcodePainter(
       barcodeCorners: [const Offset(10, 10), const Offset(60, 10), const Offset(60, 60), const Offset(10, 60)],
@@ -21,10 +22,12 @@ void main() {
     addTearDown(textPainter.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: CustomPaint(size: const Size(200, 200), painter: barcodePainter))),
+      MaterialApp(
+        home: Scaffold(body: CustomPaint(key: painterKey, size: const Size(200, 200), painter: barcodePainter)),
+      ),
     );
 
-    final box = tester.renderObject(find.byType(CustomPaint));
+    final box = tester.renderObject(find.byKey(painterKey));
     expect(
       box,
       paints
@@ -39,6 +42,7 @@ void main() {
   });
 
   testWidgets('BarcodePainter should not draw if corners is invalid', (tester) async {
+    final painterKey = UniqueKey();
     final textPainter = TextPainter(textAlign: TextAlign.center, textDirection: TextDirection.ltr);
     final barcodePainter = BarcodePainter(
       barcodeCorners: [],
@@ -55,10 +59,12 @@ void main() {
     addTearDown(textPainter.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: CustomPaint(size: const Size(200, 200), painter: barcodePainter))),
+      MaterialApp(
+        home: Scaffold(body: CustomPaint(key: painterKey, size: const Size(200, 200), painter: barcodePainter)),
+      ),
     );
 
-    final box = tester.renderObject(find.byType(CustomPaint));
+    final box = tester.renderObject(find.byKey(painterKey));
 
     expect(box, paintsNothing);
   });

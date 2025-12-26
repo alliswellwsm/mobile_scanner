@@ -8,6 +8,7 @@ import 'package:mobile_scanner/src/mobile_scanner_controller.dart';
 import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
 import 'package:mobile_scanner/src/mobile_scanner_platform_interface.dart';
 import 'package:mobile_scanner/src/mobile_scanner_view_attributes.dart';
+import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 
 // TODO: add more tests to verify actual behavior of switchCamera() with various options
@@ -56,8 +57,7 @@ void main() {
     test('throws when controller is started and then disposed', () async {
       MobileScannerPlatform.instance = FakeMobileScannerPlatform();
 
-      final controller = MobileScannerController(autoStart: false);
-
+      final controller = MobileScannerController(autoStart: false)..attach();
       await controller.start();
       await controller.dispose();
 
@@ -76,6 +76,15 @@ void main() {
 }
 
 class FakeMobileScannerPlatform extends MobileScannerPlatform {
+  @override
+  Stream<BarcodeCapture?> get barcodesStream => const Stream.empty();
+
+  @override
+  Stream<TorchState> get torchStateStream => Stream.value(TorchState.unavailable);
+
+  @override
+  Stream<double> get zoomScaleStateStream => Stream.value(1);
+
   @override
   Future<MobileScannerViewAttributes> start(StartOptions startOptions) {
     return Future.value(
