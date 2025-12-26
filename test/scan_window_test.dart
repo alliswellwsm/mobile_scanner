@@ -1,7 +1,7 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:mobile_scanner/src/scan_window_calculation.dart';
+import 'package:mobile_scanner/src/utils/scan_window_calculation.dart';
 
 void main() {
   group('Scan window relative to texture', () {
