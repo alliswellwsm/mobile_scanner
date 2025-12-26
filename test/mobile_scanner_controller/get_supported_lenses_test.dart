@@ -47,4 +47,10 @@ class FakeMobileScannerPlatform extends MobileScannerPlatform {
   Future<Set<CameraLensType>> getSupportedLenses() {
     return Future.value(_supportedLenses);
   }
+
+  @override
+  Future<void> dispose() {
+    // No-op.
+    return Future.value();
+  }
 }
