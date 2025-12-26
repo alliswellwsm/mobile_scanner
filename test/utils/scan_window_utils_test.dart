@@ -3,6 +3,151 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
 
 void main() {
+  group('calculateBoxFitRatio', () {
+    const cameraPreviewSize = Size(480, 640);
+    const size = Size(432, 256);
+
+    test('works with BoxFit.fill', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.9, heightRatio: 0.4));
+    });
+
+    test('works with BoxFit.contain', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.contain,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.4, heightRatio: 0.4));
+    });
+
+    test('works with BoxFit.cover', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.cover,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.9, heightRatio: 0.9));
+    });
+
+    test('works with BoxFit.fitWidth', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fitWidth,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.9, heightRatio: 0.9));
+    });
+
+    test('works with BoxFit.fitHeight', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fitHeight,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.4, heightRatio: 0.4));
+    });
+
+    test('works with BoxFit.none', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.none,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('works with BoxFit.scaleDown', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.scaleDown,
+        cameraPreviewSize: cameraPreviewSize,
+        size: size,
+      );
+
+      expect(ratio, (widthRatio: 0.4, heightRatio: 0.4));
+    });
+
+    test('handles zero width in camera preview size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(0, 100),
+        size: const Size(200, 200),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles zero height in camera preview size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(100, 0),
+        size: const Size(200, 200),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles zero camera preview size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: Size.zero,
+        size: const Size(200, 200),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles zero width in target size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(100, 100),
+        size: const Size(0, 200),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles zero height in target size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(100, 100),
+        size: const Size(200, 0),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles zero target size', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(200, 200),
+        size: Size.zero,
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+
+    test('handles equal target and camera sizes', () {
+      final ratio = ScanWindowUtils.calculateBoxFitRatio(
+        boxFit: BoxFit.fill,
+        cameraPreviewSize: const Size(200, 200),
+        size: const Size(200, 200),
+      );
+
+      expect(ratio, (widthRatio: 1.0, heightRatio: 1.0));
+    });
+  });
+
   group('calculateScanWindowRelativeToTextureInPercentage', () {
     group('can compute scan window for landscape widget inside portrait texture', () {
       const textureSize = Size(480, 640);

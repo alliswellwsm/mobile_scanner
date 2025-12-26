@@ -4,11 +4,63 @@ import 'package:flutter/rendering.dart';
 
 /// A utility class for calculating scan window sizes.
 final class ScanWindowUtils {
+  /// Calculate the scaling ratios for width and height
+  /// to fit the provided [cameraPreviewSize] into the specified [size],
+  /// based on the specified [boxFit].
+  ///
+  /// Returns a record containing the width and height scaling ratios.
+  static ({double widthRatio, double heightRatio}) calculateBoxFitRatio({
+    required BoxFit boxFit,
+    required Size cameraPreviewSize,
+    required Size size,
+  }) {
+    if (cameraPreviewSize.width <= 0 || cameraPreviewSize.height <= 0 || size.width <= 0 || size.height <= 0) {
+      return (widthRatio: 1.0, heightRatio: 1.0);
+    }
+
+    final widthRatio = size.width / cameraPreviewSize.width;
+    final heightRatio = size.height / cameraPreviewSize.height;
+
+    switch (boxFit) {
+      case BoxFit.fill:
+        // Stretch to fill the large box without maintaining aspect ratio.
+        return (widthRatio: widthRatio, heightRatio: heightRatio);
+
+      case BoxFit.contain:
+        // Maintain aspect ratio,
+        // ensure the content fits entirely within the large box.
+        final double ratio = min(widthRatio, heightRatio);
+        return (widthRatio: ratio, heightRatio: ratio);
+
+      case BoxFit.cover:
+        // Maintain aspect ratio, ensure the content fully covers the large box.
+        final double ratio = max(widthRatio, heightRatio);
+        return (widthRatio: ratio, heightRatio: ratio);
+
+      case BoxFit.fitWidth:
+        // Maintain aspect ratio, ensure the width matches the large box.
+        return (widthRatio: widthRatio, heightRatio: widthRatio);
+
+      case BoxFit.fitHeight:
+        // Maintain aspect ratio, ensure the height matches the large box.
+        return (widthRatio: heightRatio, heightRatio: heightRatio);
+
+      case BoxFit.none:
+        return (widthRatio: 1.0, heightRatio: 1.0);
+
+      case BoxFit.scaleDown:
+        // If the content is larger than the large box, scale down to fit.
+        // Otherwise, no scaling is needed.
+        final ratio = min(1, min(widthRatio, heightRatio)).toDouble();
+        return (widthRatio: ratio, heightRatio: ratio);
+    }
+  }
+
   /// Calculate the scan window rectangle relative to the texture size.
   ///
-  /// The [scanWindow] rectangle will be relative and scaled to [widgetSize], not
-  /// [textureSize]. Depending on the given [fit], the [scanWindow] can partially
-  /// overlap the [textureSize], or not at all.
+  /// The [scanWindow] rectangle will be relative and scaled to [widgetSize],
+  /// not [textureSize]. Depending on the given [fit],
+  /// the [scanWindow] can partially overlap the [textureSize], or not at all.
   ///
   /// Due to using [BoxFit] the content will always be centered on its parent,
   /// which enables converting the rectangle to be relative to the texture.

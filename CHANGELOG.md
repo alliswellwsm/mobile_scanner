@@ -8,6 +8,7 @@
 
 * Added constants for testing the method channel methods in `MobileScannerMethods` and `MobileScannerEvents`.
 * Added support for `ITF-Two-of-Five` on iOS and MacOS.
+* The global method `calculateBoxFitRatio()` is now deprecated.
 
 **Bug Fixes**
 
