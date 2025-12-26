@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/phone_type.dart';
 
 void main() {
-  group('$PhoneType tests', () {
+  group('PhoneType tests', () {
     test('can be created from raw value', () {
       const values = <int, PhoneType>{
         0: PhoneType.unknown,

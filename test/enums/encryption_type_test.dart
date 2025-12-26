@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/encryption_type.dart';
 
 void main() {
-  group('$EncryptionType tests', () {
+  group('EncryptionType tests', () {
     test('can be created from raw value', () {
       const values = <int, EncryptionType>{
         0: EncryptionType.unknown,

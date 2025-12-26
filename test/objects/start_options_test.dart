@@ -7,7 +7,7 @@ import 'package:mobile_scanner/src/enums/detection_speed.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 
 void main() {
-  group('$StartOptions tests', () {
+  group('StartOptions tests', () {
     test('toMap includes all required fields', () {
       const options = StartOptions(
         cameraDirection: CameraFacing.back,
