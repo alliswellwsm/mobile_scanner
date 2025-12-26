@@ -10,8 +10,7 @@ import 'package:mobile_scanner/src/mobile_scanner_platform_interface.dart';
 import 'package:mobile_scanner/src/mobile_scanner_preview.dart';
 import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/mobile_scanner_state.dart';
-import 'package:mobile_scanner/src/objects/scanner_error_widget.dart';
-import 'package:mobile_scanner/src/scan_window_calculation.dart';
+import 'package:mobile_scanner/src/utils/scan_window_calculation.dart';
 
 /// This widget displays a live camera preview for the barcode scanner.
 class MobileScanner extends StatefulWidget {
@@ -161,24 +160,80 @@ class MobileScanner extends StatefulWidget {
   }
 }
 
-class _MobileScannerState extends State<MobileScanner>
-    with WidgetsBindingObserver {
+class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserver {
+  /// The controller for this [MobileScanner] widget.
   late final MobileScannerController controller;
 
-  /// The current scan window.
-  Rect? scanWindow;
+  /// The current scan window, if any.
+  Rect? _scanWindow;
+
+  /// The subscription for the barcode stream,
+  /// in case [MobileScanner.onDetect] is provided.
+  StreamSubscription<BarcodeCapture>? _subscription;
+
+  Future<void> _initializeController() async {
+    controller = widget.controller ?? MobileScannerController();
+
+    controller.attach();
+    // If debug mode is enabled, stop the controller first before starting it.
+    // If a hot-restart is initiated, the controller won't be stopped, and
+    // because there is no way of knowing if a hot-restart has happened,
+    // we must assume every start is a hot-restart. Related issue:
+    // https://github.com/flutter/flutter/issues/10437
+    if (kDebugMode) {
+      if (MobileScannerPlatform.instance case final MethodChannelMobileScanner implementation) {
+        try {
+          await implementation.stop(force: true);
+        } on Exception catch (e) {
+          // Don't do anything if the controller is already stopped.
+          debugPrint('$e');
+        }
+      }
+    }
+
+    if (widget.controller == null) {
+      WidgetsBinding.instance.addObserver(this);
+    }
+
+    if (widget.onDetect != null) {
+      _subscription = controller.barcodes.listen(widget.onDetect, onError: widget.onDetectError, cancelOnError: false);
+    }
+
+    if (controller.autoStart) {
+      await controller.start();
+    }
+  }
+
+  Future<void> _disposeController() async {
+    if (widget.controller == null) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
+
+    await _subscription?.cancel();
+    _subscription = null;
+
+    if (controller.autoStart) {
+      await controller.stop();
+    }
+
+    // Dispose the internal controller, if it was set up.
+    if (widget.controller == null) {
+      await controller.dispose();
+    }
+  }
 
   /// Calculate the scan window based on the given [constraints].
-  ///
-  /// If the [scanWindow] is already set, this method does nothing.
-  void _maybeUpdateScanWindow(
-    MobileScannerState scannerState,
-    BoxConstraints constraints,
-  ) {
-    if (widget.scanWindow == null && scanWindow == null) {
+  void _maybeUpdateScanWindow(MobileScannerState scannerState, BoxConstraints constraints) {
+    // No scan window is requested.
+    if (widget.scanWindow == null && _scanWindow == null) {
       return;
-    } else if (widget.scanWindow == null) {
-      scanWindow = null;
+    }
+
+    final widgetScanWindow = widget.scanWindow;
+
+    // Clear the current scan window.
+    if (widgetScanWindow == null) {
+      _scanWindow = null;
 
       unawaited(controller.updateScanWindow(null));
       return;
@@ -186,46 +241,57 @@ class _MobileScannerState extends State<MobileScanner>
 
     final newScanWindow = calculateScanWindowRelativeToTextureInPercentage(
       widget.fit,
-      widget.scanWindow!,
+      widgetScanWindow,
       textureSize: scannerState.size,
       widgetSize: constraints.biggest,
     );
 
     // The scan window was never set before.
     // Set the initial scan window.
-    if (scanWindow == null) {
-      scanWindow = newScanWindow;
+    if (_scanWindow == null) {
+      _scanWindow = newScanWindow;
 
-      unawaited(controller.updateScanWindow(scanWindow));
+      unawaited(controller.updateScanWindow(_scanWindow));
 
       return;
     }
 
     // The scan window did not not change.
     // The left, right, top and bottom are the same.
-    if (scanWindow == newScanWindow) {
+    if (_scanWindow == newScanWindow) {
       return;
     }
 
     // The update threshold is not set, allow updating the scan window.
     if (widget.scanWindowUpdateThreshold == 0.0) {
-      scanWindow = newScanWindow;
+      _scanWindow = newScanWindow;
 
-      unawaited(controller.updateScanWindow(scanWindow));
+      unawaited(controller.updateScanWindow(_scanWindow));
 
       return;
     }
 
-    final dx = (newScanWindow.width - scanWindow!.width).abs();
-    final dy = (newScanWindow.height - scanWindow!.height).abs();
+    final currentScanWindow = _scanWindow;
+
+    if (currentScanWindow == null) {
+      return;
+    }
+
+    final dx = (newScanWindow.width - currentScanWindow.width).abs();
+    final dy = (newScanWindow.height - currentScanWindow.height).abs();
 
     // The new scan window has changed enough, allow updating the scan window.
-    if (dx >= widget.scanWindowUpdateThreshold ||
-        dy >= widget.scanWindowUpdateThreshold) {
-      scanWindow = newScanWindow;
+    if (dx >= widget.scanWindowUpdateThreshold || dy >= widget.scanWindowUpdateThreshold) {
+      _scanWindow = newScanWindow;
 
-      unawaited(controller.updateScanWindow(scanWindow));
+      unawaited(controller.updateScanWindow(_scanWindow));
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initializeController());
   }
 
   @override
@@ -264,6 +330,7 @@ class _MobileScannerState extends State<MobileScanner>
 
         return LayoutBuilder(
           builder: (context, constraints) {
+            // TODO: use a RenderObject widget subclass, to avoid side effects in build
             _maybeUpdateScanWindow(value, constraints);
 
             final overlay = widget.overlayBuilder?.call(context, constraints);
@@ -271,10 +338,7 @@ class _MobileScannerState extends State<MobileScanner>
             final Widget scannerWidget = ClipRect(
               child: SizedBox.fromSize(
                 size: constraints.biggest,
-                child: FittedBox(
-                  fit: widget.fit,
-                  child: CameraPreview(controller),
-                ),
+                child: FittedBox(fit: widget.fit, child: CameraPreview(controller)),
               ),
             );
 
@@ -287,9 +351,7 @@ class _MobileScannerState extends State<MobileScanner>
                     final relativeX = details.globalPosition.dx / size.width;
                     final relativeY = details.globalPosition.dy / size.height;
 
-                    await controller.setFocusPoint(
-                      Offset(relativeX, relativeY),
-                    );
+                    await controller.setFocusPoint(Offset(relativeX, relativeY));
                   },
                 );
               },
@@ -306,87 +368,14 @@ class _MobileScannerState extends State<MobileScanner>
             return Stack(
               alignment: Alignment.center,
               children: <Widget>[
-                if (widget.tapToFocus)
-                  tapToFocusScannerWidget
-                else
-                  scannerWidget,
-                IgnorePointer(child: overlay),
+                if (widget.tapToFocus) tapToFocusScannerWidget else scannerWidget,
+                IgnorePointer(ignoring: widget.tapToFocus, child: overlay),
               ],
             );
           },
         );
       },
     );
-  }
-
-  StreamSubscription<BarcodeCapture>? _subscription;
-
-  Future<void> initMobileScanner() async {
-    controller = widget.controller ?? MobileScannerController();
-
-    controller.attach();
-    // If debug mode is enabled, stop the controller first before starting it.
-    // If a hot-restart is initiated, the controller won't be stopped, and
-    // because there is no way of knowing if a hot-restart has happened,
-    // we must assume every start is a hot-restart. Related issue:
-    // https://github.com/flutter/flutter/issues/10437
-    if (kDebugMode) {
-      if (MobileScannerPlatform.instance
-          case final MethodChannelMobileScanner implementation) {
-        try {
-          await implementation.stop(force: true);
-        } on Exception catch (e) {
-          // Don't do anything if the controller is already stopped.
-          debugPrint('$e');
-        }
-      }
-    }
-
-    if (widget.controller == null) {
-      WidgetsBinding.instance.addObserver(this);
-    }
-
-    if (widget.onDetect != null) {
-      _subscription = controller.barcodes.listen(
-        widget.onDetect,
-        onError: widget.onDetectError,
-        cancelOnError: false,
-      );
-    }
-
-    if (controller.autoStart) {
-      await controller.start();
-    }
-  }
-
-  Future<void> disposeMobileScanner() async {
-    if (widget.controller == null) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
-
-    await _subscription?.cancel();
-    _subscription = null;
-
-    if (controller.autoStart) {
-      await controller.stop();
-    }
-
-    // Dispose default controller if not provided by user
-    if (widget.controller == null) {
-      await controller.dispose();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(initMobileScanner());
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    unawaited(disposeMobileScanner());
   }
 
   @override
@@ -405,5 +394,11 @@ class _MobileScannerState extends State<MobileScanner>
       case AppLifecycleState.inactive:
         unawaited(controller.stop());
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    unawaited(_disposeController());
   }
 }
