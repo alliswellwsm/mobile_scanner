@@ -10,7 +10,7 @@ import 'package:mobile_scanner/src/mobile_scanner_platform_interface.dart';
 import 'package:mobile_scanner/src/mobile_scanner_preview.dart';
 import 'package:mobile_scanner/src/objects/barcode_capture.dart';
 import 'package:mobile_scanner/src/objects/mobile_scanner_state.dart';
-import 'package:mobile_scanner/src/utils/scan_window_calculation.dart';
+import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
 
 /// This widget displays a live camera preview for the barcode scanner.
 class MobileScanner extends StatefulWidget {
@@ -239,7 +239,7 @@ class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserv
       return;
     }
 
-    final newScanWindow = calculateScanWindowRelativeToTextureInPercentage(
+    final newScanWindow = ScanWindowUtils.calculateScanWindowRelativeToTextureInPercentage(
       widget.fit,
       widgetScanWindow,
       textureSize: scannerState.size,
