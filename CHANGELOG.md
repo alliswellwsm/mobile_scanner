@@ -7,6 +7,7 @@
 **Improvements**
 
 * Added constants for testing the method channel methods in `MobileScannerMethods` and `MobileScannerEvents`.
+* Added support for `ITF-Two-of-Five` on iOS and MacOS.
 
 **Bug Fixes**
 
