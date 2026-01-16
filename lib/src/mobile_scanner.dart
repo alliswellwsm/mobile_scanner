@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
 import 'package:mobile_scanner/src/mobile_scanner_controller.dart';
 import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
@@ -328,21 +327,12 @@ class _MobileScannerState extends State<MobileScanner>
                     padding: EdgeInsets.only(bottom: 16),
                     child: Icon(Icons.error, color: Colors.white),
                   ),
-                  if (kDebugMode) ...[
-                    Text(
-                      error.errorCode.message,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    if (error.errorDetails?.message case final String message)
-                      Text(
-                        message,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                  ] else
-                    Text(
-                      MobileScannerErrorCode.genericError.message,
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                  Text(
+                    error.errorCode.message,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  if (error.errorDetails?.message case final String message)
+                    Text(message, style: const TextStyle(color: Colors.white)),
                 ],
               ),
             ),
