@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/torch_state.dart';
 
 void main() {
-  group('$TorchState tests', () {
+  group('TorchState tests', () {
     test('can be created from raw value', () {
       const values = <int, TorchState>{
         0: TorchState.off,

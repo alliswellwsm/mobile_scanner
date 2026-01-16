@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/detection_speed.dart';
 
 void main() {
-  group('$DetectionSpeed tests', () {
+  group('DetectionSpeed tests', () {
     test('can be created from raw value', () {
       const values = <int, DetectionSpeed>{
         0: DetectionSpeed.noDuplicates,

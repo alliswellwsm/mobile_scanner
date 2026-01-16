@@ -7,20 +7,18 @@ import 'package:mobile_scanner/src/mobile_scanner_platform_interface.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('getSupportedLenses() tests', () {
+  group('getSupportedLenses', () {
     late MethodChannelMobileScanner platform;
-
-    void resetMethodCallHandler() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(platform.methodChannel, null);
-    }
 
     setUp(() {
       platform = MethodChannelMobileScanner();
       MobileScannerPlatform.instance = platform;
     });
 
-    tearDown(resetMethodCallHandler);
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(platform.methodChannel, null);
+    });
 
     test('returns set of supported lenses', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

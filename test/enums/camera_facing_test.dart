@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/camera_facing.dart';
 
 void main() {
-  group('$CameraFacing tests', () {
+  group('CameraFacing tests', () {
     test('can be created from raw value', () {
       const values = <int?, CameraFacing>{
         null: CameraFacing.unknown,
