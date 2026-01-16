@@ -25,11 +25,7 @@ Rect calculateScanWindowRelativeToTextureInPercentage(
 }) {
   // Convert the texture size to a size in widget-space, with the box fit
   // applied.
-  final fittedTextureSize = applyBoxFit(
-    fit,
-    textureSize,
-    widgetSize,
-  );
+  final fittedTextureSize = applyBoxFit(fit, textureSize, widgetSize);
 
   // Get the correct scaling values depending on the given BoxFit mode
   var sx = fittedTextureSize.destination.width / textureSize.width;

@@ -11,9 +11,7 @@ class Address {
   /// Creates a new [Address] instance from a map.
   factory Address.fromNative(Map<Object?, Object?> data) {
     final addressLines = data['addressLines'] as List<Object?>?;
-    final type = AddressType.fromRawValue(
-      data['type'] as int? ?? 0,
-    );
+    final type = AddressType.fromRawValue(data['type'] as int? ?? 0);
 
     if (addressLines == null) {
       return Address(type: type);

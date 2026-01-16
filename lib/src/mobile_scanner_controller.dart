@@ -660,10 +660,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     }
 
     await stop();
-    return start(
-      cameraDirection: targetDirection,
-      cameraLensType: lensType,
-    );
+    return start(cameraDirection: targetDirection, cameraLensType: lensType);
   }
 
   /// Switches the flashlight on or off.

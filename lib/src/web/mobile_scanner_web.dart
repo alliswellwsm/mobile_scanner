@@ -136,9 +136,7 @@ class MobileScannerWeb extends MobileScannerPlatform {
     HTMLVideoElement videoElement,
     MediaStream videoStream,
   ) {
-    final settings = _settingsDelegate.getSettings(
-      videoStream,
-    );
+    final settings = _settingsDelegate.getSettings(videoStream);
 
     // First try checking the facing mode.
     if (settings?.facingModeNullable?.toDart == 'user') {
@@ -182,9 +180,7 @@ class MobileScannerWeb extends MobileScannerPlatform {
     if (capabilities.isUndefinedOrNull || !capabilities.facingMode) {
       constraints = MediaStreamConstraints(video: true.toJS);
     } else {
-      final facingMode = _settingsDelegate.getFacingMode(
-        cameraDirection,
-      );
+      final facingMode = _settingsDelegate.getFacingMode(cameraDirection);
 
       constraints = MediaStreamConstraints(
         video: MediaTrackConstraintSet(facingMode: facingMode.toJS),
@@ -327,9 +323,7 @@ class MobileScannerWeb extends MobileScannerPlatform {
     );
 
     // Request camera permissions and prepare the video stream.
-    final videoStream = await _prepareVideoStream(
-      startOptions.cameraDirection,
-    );
+    final videoStream = await _prepareVideoStream(startOptions.cameraDirection);
 
     try {
       // Clear the existing barcodes.
@@ -389,9 +383,7 @@ class MobileScannerWeb extends MobileScannerPlatform {
         await _barcodeReader?.setTorchState(TorchState.on);
       }
 
-      final cameraDirection = _settingsDelegate.getCameraDirection(
-        videoStream,
-      );
+      final cameraDirection = _settingsDelegate.getCameraDirection(videoStream);
 
       return MobileScannerViewAttributes(
         cameraDirection: cameraDirection,

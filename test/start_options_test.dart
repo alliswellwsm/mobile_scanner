@@ -95,10 +95,10 @@ void main() {
 
       final map = options.toMap();
 
-      expect(
-        map['formats'],
-        [BarcodeFormat.qrCode.rawValue, BarcodeFormat.code128.rawValue],
-      );
+      expect(map['formats'], [
+        BarcodeFormat.qrCode.rawValue,
+        BarcodeFormat.code128.rawValue,
+      ]);
     });
 
     test('toMap excludes formats when empty', () {
