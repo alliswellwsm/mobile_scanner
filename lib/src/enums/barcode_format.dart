@@ -70,7 +70,7 @@ enum BarcodeFormat {
       case 4:
         return BarcodeFormat.code93;
       case 8:
-        return BarcodeFormat.codebar;
+        return BarcodeFormat.codabar;
       case 16:
         return BarcodeFormat.dataMatrix;
       case 32:
