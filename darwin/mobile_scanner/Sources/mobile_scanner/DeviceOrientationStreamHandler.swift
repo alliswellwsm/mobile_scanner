@@ -14,6 +14,7 @@ class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var orientationObserver: NSObjectProtocol?
     private var lastSentOrientation: UIInterfaceOrientation?
+    private var lastSentDeviceOrientation: UIDeviceOrientation?
 
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         self.eventSink = events
@@ -40,6 +41,7 @@ class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
         UIDevice.current.endGeneratingDeviceOrientationNotifications()
         eventSink = nil
         lastSentOrientation = nil
+        lastSentDeviceOrientation = nil
         return nil
     }
 
@@ -84,6 +86,13 @@ class DeviceOrientationStreamHandler: NSObject, FlutterStreamHandler {
             if orientation == .faceUp || orientation == .faceDown {
                 return
             }
+            
+            // Only send event if device orientation has changed
+            if lastSentDeviceOrientation == orientation {
+                return
+            }
+
+            lastSentDeviceOrientation = orientation
 
             let orientationString = orientation.toOrientationString
             sink(orientationString)
