@@ -2,6 +2,26 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mobile_scanner/src/utils/scan_window_utils.dart';
+
+/// Calculate the scaling ratios for width and height to fit the provided
+/// [cameraPreviewSize] into the specified [size],
+/// based on the specified [boxFit].
+///
+/// Returns a record containing the width and height scaling ratios.
+@Deprecated('Use ScanWindowUtils.calculateBoxFitRatio instead.')
+({double widthRatio, double heightRatio}) calculateBoxFitRatio(
+  BoxFit boxFit,
+  Size cameraPreviewSize,
+  Size size,
+) {
+  // TODO(navaronbracke): remove the deprecated method in the next release
+  return ScanWindowUtils.calculateBoxFitRatio(
+    boxFit: boxFit,
+    cameraPreviewSize: cameraPreviewSize,
+    size: size,
+  );
+}
 
 /// A [CustomPainter] that draws the barcode as an outlined barcode box with
 /// rounded corners and a displayed value.
@@ -65,10 +85,10 @@ class BarcodePainter extends CustomPainter {
     final adjustedCameraPreviewSize =
         isLandscape ? cameraPreviewSize.flipped : cameraPreviewSize;
 
-    final ratios = calculateBoxFitRatio(
-      boxFit,
-      adjustedCameraPreviewSize,
-      size,
+    final ratios = ScanWindowUtils.calculateBoxFitRatio(
+      boxFit: boxFit,
+      cameraPreviewSize: adjustedCameraPreviewSize,
+      size: size,
     );
 
     final horizontalPadding =
@@ -173,62 +193,5 @@ class BarcodePainter extends CustomPainter {
         oldDelegate.style != style ||
         oldDelegate.barcodeValue != barcodeValue ||
         oldDelegate.deviceOrientation != deviceOrientation;
-  }
-}
-
-/// Calculate the scaling ratios for width and height to fit the small box
-/// (cameraPreviewSize) into the large box (size) based on the specified BoxFit
-/// mode. Returns a record containing the width and height scaling ratios.
-({double widthRatio, double heightRatio}) calculateBoxFitRatio(
-  BoxFit boxFit,
-  Size cameraPreviewSize,
-  Size size,
-) {
-  // If the width or height of cameraPreviewSize or size is 0, return (1.0, 1.0)
-  // (no scaling)
-  if (cameraPreviewSize.width <= 0 ||
-      cameraPreviewSize.height <= 0 ||
-      size.width <= 0 ||
-      size.height <= 0) {
-    return (widthRatio: 1.0, heightRatio: 1.0);
-  }
-
-  // Calculate the scaling ratios for width and height
-  final widthRatio = size.width / cameraPreviewSize.width;
-  final heightRatio = size.height / cameraPreviewSize.height;
-
-  switch (boxFit) {
-    case BoxFit.fill:
-      // Stretch to fill the large box without maintaining aspect ratio
-      return (widthRatio: widthRatio, heightRatio: heightRatio);
-
-    case BoxFit.contain:
-      // Maintain aspect ratio, ensure the content fits entirely within the
-      // large box
-      final double ratio = math.min(widthRatio, heightRatio);
-      return (widthRatio: ratio, heightRatio: ratio);
-
-    case BoxFit.cover:
-      // Maintain aspect ratio, ensure the content fully covers the large box
-      final double ratio = math.max(widthRatio, heightRatio);
-      return (widthRatio: ratio, heightRatio: ratio);
-
-    case BoxFit.fitWidth:
-      // Maintain aspect ratio, ensure the width matches the large box
-      return (widthRatio: widthRatio, heightRatio: widthRatio);
-
-    case BoxFit.fitHeight:
-      // Maintain aspect ratio, ensure the height matches the large box
-      return (widthRatio: heightRatio, heightRatio: heightRatio);
-
-    case BoxFit.none:
-      // No scaling
-      return (widthRatio: 1.0, heightRatio: 1.0);
-
-    case BoxFit.scaleDown:
-      // If the content is larger than the large box, scale down to fit;
-      // otherwise, no scaling
-      final ratio = math.min(1, math.min(widthRatio, heightRatio)).toDouble();
-      return (widthRatio: ratio, heightRatio: ratio);
   }
 }

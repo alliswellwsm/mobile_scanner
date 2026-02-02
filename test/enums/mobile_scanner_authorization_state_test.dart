@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_authorization_state.dart';
 
 void main() {
-  group('$MobileScannerAuthorizationState tests', () {
+  group('MobileScannerAuthorizationState tests', () {
     test('can be created from raw value', () {
       const values = <int, MobileScannerAuthorizationState>{
         0: MobileScannerAuthorizationState.undetermined,

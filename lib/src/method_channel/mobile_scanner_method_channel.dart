@@ -342,10 +342,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       throw UnimplementedError('setFocusPoint() has not been implemented.');
     }
 
-    final params = <String, Object?>{
-      'dx': position.dx,
-      'dy': position.dy,
-    };
+    final params = <String, Object?>{'dx': position.dx, 'dy': position.dy};
 
     await methodChannel.invokeMethod<void>(kSetFocusMethodName, params);
   }

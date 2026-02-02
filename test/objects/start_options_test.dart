@@ -7,7 +7,7 @@ import 'package:mobile_scanner/src/enums/detection_speed.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 
 void main() {
-  group('$StartOptions tests', () {
+  group('StartOptions tests', () {
     test('toMap includes all required fields', () {
       const options = StartOptions(
         cameraDirection: CameraFacing.back,
@@ -95,10 +95,10 @@ void main() {
 
       final map = options.toMap();
 
-      expect(
-        map['formats'],
-        [BarcodeFormat.qrCode.rawValue, BarcodeFormat.code128.rawValue],
-      );
+      expect(map['formats'], [
+        BarcodeFormat.qrCode.rawValue,
+        BarcodeFormat.code128.rawValue,
+      ]);
     });
 
     test('toMap excludes formats when empty', () {

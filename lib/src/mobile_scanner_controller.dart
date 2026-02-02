@@ -222,20 +222,23 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   }
 
   void _throwIfNotInitialized() {
-    if (!value.isInitialized) {
-      throw MobileScannerException(
-        errorCode: MobileScannerErrorCode.controllerUninitialized,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerUninitialized.message,
-        ),
-      );
-    }
-
+    // If the controller is disposed,
+    // for example, it was never started, and then disposed,
+    // throw the disposed error.
     if (_isDisposed) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,
         errorDetails: MobileScannerErrorDetails(
           message: MobileScannerErrorCode.controllerDisposed.message,
+        ),
+      );
+    }
+
+    if (!value.isInitialized) {
+      throw MobileScannerException(
+        errorCode: MobileScannerErrorCode.controllerUninitialized,
+        errorDetails: MobileScannerErrorDetails(
+          message: MobileScannerErrorCode.controllerUninitialized.message,
         ),
       );
     }
@@ -660,10 +663,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     }
 
     await stop();
-    return start(
-      cameraDirection: targetDirection,
-      cameraLensType: lensType,
-    );
+    return start(cameraDirection: targetDirection, cameraLensType: lensType);
   }
 
   /// Switches the flashlight on or off.

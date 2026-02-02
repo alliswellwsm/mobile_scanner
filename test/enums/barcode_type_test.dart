@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/barcode_type.dart';
 
 void main() {
-  group('$BarcodeType tests', () {
+  group('BarcodeType tests', () {
     test('can be created from raw value', () {
       const values = <int, BarcodeType>{
         0: BarcodeType.unknown,
