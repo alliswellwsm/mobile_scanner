@@ -84,11 +84,10 @@ class _ExampleHome extends StatelessWidget {
     IconData icon,
   ) {
     return GestureDetector(
-      onTap: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute<void>(builder: (context) => page));
-      },
+      onTap:
+          () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute<void>(builder: (context) => page)),
       child: Card(
         elevation: 5,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
