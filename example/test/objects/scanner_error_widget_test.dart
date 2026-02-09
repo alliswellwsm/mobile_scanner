@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/mobile_scanner_error_code.dart';
 import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
-import 'package:mobile_scanner/src/objects/scanner_error_widget.dart';
+import 'package:mobile_scanner_example/widgets/scanner_error_widget.dart';
 
 void main() {
   group('$ScannerErrorWidget tests', () {
@@ -31,7 +31,7 @@ void main() {
         ),
       );
 
-      final coloredBox = tester.widget<ColoredBox>(
+      final ColoredBox coloredBox = tester.widget<ColoredBox>(
         find.descendant(
           of: find.byType(ScannerErrorWidget),
           matching: find.byType(ColoredBox),
@@ -51,7 +51,7 @@ void main() {
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.error));
+      final Icon icon = tester.widget<Icon>(find.byIcon(Icons.error));
       expect(icon.color, Colors.white);
     });
 
@@ -152,7 +152,8 @@ void main() {
     });
 
     testWidgets('works with all error codes', (tester) async {
-      for (final errorCode in MobileScannerErrorCode.values) {
+      for (final MobileScannerErrorCode errorCode
+          in MobileScannerErrorCode.values) {
         final error = MobileScannerException(errorCode: errorCode);
 
         await tester.pumpWidget(
@@ -179,7 +180,9 @@ void main() {
       );
 
       // Should only find the error code message, not an additional details text
-      final textWidgets = tester.widgetList<Text>(find.byType(Text));
+      final Iterable<Text> textWidgets = tester.widgetList<Text>(
+        find.byType(Text),
+      );
       expect(textWidgets.length, 1);
       expect(
         find.text(MobileScannerErrorCode.genericError.message),
