@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/email_type.dart';
 
 void main() {
-  group('$EmailType tests', () {
+  group('EmailType tests', () {
     test('can be created from raw value', () {
       const values = <int, EmailType>{
         0: EmailType.unknown,

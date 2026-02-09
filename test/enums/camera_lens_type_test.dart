@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/camera_lens_type.dart';
 
 void main() {
-  group('$CameraLensType tests', () {
+  group('CameraLensType tests', () {
     test('can be created from raw value', () {
       const values = <int?, CameraLensType>{
         null: CameraLensType.any,

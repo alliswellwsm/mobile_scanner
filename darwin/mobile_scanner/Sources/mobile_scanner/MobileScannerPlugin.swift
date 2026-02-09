@@ -1009,7 +1009,7 @@ class MapArgumentReader {
         }
         var barcodeFormats:[VNBarcodeSymbology] = []
         syms.forEach { id in
-            if let bc:VNBarcodeSymbology = VNBarcodeSymbology.fromInt(id) {
+            if let bc: VNBarcodeSymbology = VNBarcodeSymbology.fromInt(id) {
                 barcodeFormats.append(bc)
             }
         }
@@ -1154,6 +1154,10 @@ extension VNBarcodeSymbology {
             return VNBarcodeSymbology.ean13
         case 64:
             return VNBarcodeSymbology.ean8
+        case 126:
+            return VNBarcodeSymbology.i2of5
+        case 127:
+            return VNBarcodeSymbology.i2of5Checksum
         case 128:
             return VNBarcodeSymbology.itf14
         case 256:
@@ -1188,6 +1192,10 @@ extension VNBarcodeSymbology {
             return 32
         case VNBarcodeSymbology.ean8:
             return 64
+        case VNBarcodeSymbology.i2of5:
+            return 126
+        case VNBarcodeSymbology.i2of5Checksum:
+            return 127
         case VNBarcodeSymbology.itf14:
             return 128
         case VNBarcodeSymbology.qr:

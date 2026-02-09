@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/address_type.dart';
 
 void main() {
-  group('$AddressType tests', () {
+  group('AddressType tests', () {
     test('can be created from raw value', () {
       const values = <int, AddressType>{
         0: AddressType.unknown,
