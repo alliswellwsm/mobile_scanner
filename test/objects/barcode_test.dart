@@ -408,6 +408,13 @@ void main() {
 
       test('handles all barcode formats', () {
         for (final format in BarcodeFormat.values) {
+          // BarcodeFormat.itf is a deprecated alias for itf14,
+          // sharing the same rawValue (128). Skip it to avoid
+          // the ambiguous reverse lookup.
+          if (format == BarcodeFormat.itf) {
+            continue;
+          }
+
           final barcode = Barcode.fromNative(<Object?, Object?>{
             'format': format.rawValue,
           });
