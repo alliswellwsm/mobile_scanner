@@ -18,7 +18,7 @@ import io.flutter.plugin.common.EventChannel
  *
  * The orientation is determined from the display rotation rather than raw sensor data.
  * This ensures that the reported orientation respects both the system rotation lock
- * andf Flutter [SystemChrome.setPreferredOrientations].
+ * and Flutter `SystemChrome.setPreferredOrientations`.
  */
 class DeviceOrientationListener(
     private val activity: Activity,
