@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
 import 'package:mobile_scanner/src/mobile_scanner_controller.dart';
 import 'package:mobile_scanner/src/mobile_scanner_exception.dart';
@@ -251,7 +252,13 @@ class _MobileScannerState extends State<MobileScanner>
         ScanWindowUtils.calculateScanWindowRelativeToTextureInPercentage(
           widget.fit,
           widgetScanWindow,
-          textureSize: scannerState.size,
+          textureSize:
+              scannerState.deviceOrientation ==
+                          DeviceOrientation.landscapeLeft ||
+                      scannerState.deviceOrientation ==
+                          DeviceOrientation.landscapeRight
+                  ? scannerState.size.flipped
+                  : scannerState.size,
           widgetSize: constraints.biggest,
         );
 
