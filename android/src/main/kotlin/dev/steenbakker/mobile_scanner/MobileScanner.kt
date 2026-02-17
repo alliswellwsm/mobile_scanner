@@ -321,13 +321,12 @@ class MobileScanner(
         barcode: Barcode,
         inputImage: ImageProxy
     ): Boolean {
-        // TODO: use `cornerPoints` instead, since the bounding box is not bound to the coordinate system of the input image
-        // On iOS we do this correctly, so the calculation should match that.
-        val barcodeBoundingBox = barcode.boundingBox ?: return false
+        val cornerPoints = barcode.cornerPoints ?: return false
 
         try {
-            val imageWidth = inputImage.height
-            val imageHeight = inputImage.width
+            val rotationDegrees = inputImage.imageInfo.rotationDegrees
+            val imageWidth = if (rotationDegrees % 180 == 0) inputImage.width else inputImage.height
+            val imageHeight = if (rotationDegrees % 180 == 0) inputImage.height else inputImage.width
 
             val left = (scanWindow[0] * imageWidth).roundToInt()
             val top = (scanWindow[1] * imageHeight).roundToInt()
@@ -336,7 +335,7 @@ class MobileScanner(
 
             val scaledScanWindow = Rect(left, top, right, bottom)
 
-            return scaledScanWindow.contains(barcodeBoundingBox)
+            return cornerPoints.all { scaledScanWindow.contains(it.x, it.y) }
         } catch (_: IllegalArgumentException) {
             // Rounding of the scan window dimensions can fail, due to encountering NaN.
             // If we get NaN, rather than give a false positive, just return false.
