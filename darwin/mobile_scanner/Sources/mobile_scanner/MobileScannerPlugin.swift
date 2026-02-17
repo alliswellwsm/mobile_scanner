@@ -46,11 +46,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     var position = AVCaptureDevice.Position.back
     
     var standardZoomFactor: CGFloat = 1
-    
+
 #if os(iOS)
-    var deviceOrientation: UIDeviceOrientation = UIDeviceOrientation.unknown
+    var interfaceOrientationObserver: NSObjectProtocol?
 #endif
-    
+
     private var stopped: Bool {
         return device == nil || captureSession == nil
     }
@@ -76,11 +76,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         registrar.addMethodCallDelegate(instance, channel: method)
         event.setStreamHandler(instance)
-        
+
 #if os(iOS)
         let orientationEvent = FlutterEventChannel(name:
                                             "dev.steenbakker.mobile_scanner/scanner/deviceOrientation", binaryMessenger: messenger)
-        orientationEvent.setStreamHandler(DeviceOrientationStreamHandler(onOrientationChanged: instance.setDeviceOrientation))
+        orientationEvent.setStreamHandler(DeviceOrientationStreamHandler())
 #endif
     }
     
@@ -99,6 +99,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
             start(call, result)
         case "toggleTorch":
             toggleTorch(result)
+        case "getSupportedLenses":
+            getSupportedLenses(result)
         case "setScale":
             setScale(call, result)
         case "setFocus":
@@ -308,8 +310,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
     private func getVideoOrientation() -> AVCaptureVideoOrientation {
 #if os(iOS)
-        // Get the orientation from the window scene if available
-        // When the app's orientation is fixed and the app orientation is actually different from the device orientation, it malfunctions.
+        // Set video orientation to match interface orientation
+        // This ensures the camera feed is correctly oriented
         if #available(iOS 13.0, *) {
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                 let orientation = windowScene.interfaceOrientation
@@ -323,32 +325,15 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 case .landscapeRight:
                     return .landscapeRight
                 default:
-                    break
-                }         
+                    return .portrait
+                }
             }
         }
-
-        var videoOrientation: AVCaptureVideoOrientation
-
-        switch UIDevice.current.orientation {
-        case .portrait:
-            videoOrientation = .portrait
-        case .portraitUpsideDown:
-            videoOrientation = .portraitUpsideDown
-        case .landscapeLeft:
-            videoOrientation = .landscapeLeft
-        case .landscapeRight:
-            videoOrientation = .landscapeRight
-        default:
-            videoOrientation = .portrait
-        }
-
-        return videoOrientation
+        return .portrait
 #else
         return .portrait
 #endif
     }
-
 
     func start(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         if (device != nil || captureSession != nil) {
@@ -365,6 +350,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         let torch:Bool = argReader.bool(key: "torch") ?? false
         let facing:Int = argReader.int(key: "facing") ?? 1
+        let lensType:Int = argReader.int(key: "lensType") ?? -1
         let speed:Int = argReader.int(key: "speed") ?? 0
         let timeoutMs:Int = argReader.int(key: "timeout") ?? 0
         let initialZoom: CGFloat? = {
@@ -386,26 +372,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 #else
         position = AVCaptureDevice.Position.front
 #endif
-        
-        // Open the camera device
-#if os(iOS)
-        if #available(iOS 13.0, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInTripleCamera, .builtInDualCamera, .builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#else
-        if #available(macOS 10.15, *) {
-            device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: position).devices.first
-        }
-#endif
-        
-        if (device == nil) {
-            device = AVCaptureDevice.devices(for: .video).filter({$0.position == position}).first
-        }
-        
-        if (device == nil) {
-            device = AVCaptureDevice.default(for: .video)
-        }
-        
+
+        // Open the camera device based on position and lens type
+        device = MobileScannerCameraSelector.selectCamera(position: position, lensType: lensType)
+
         if (device == nil) {
             result(FlutterError(code: MobileScannerErrorCodes.NO_CAMERA_ERROR,
                                 message: MobileScannerErrorCodes.NO_CAMERA_ERROR_MESSAGE,
@@ -455,17 +425,15 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         }
         captureSession!.sessionPreset = AVCaptureSession.Preset.high
 
-        // Add video output
         let videoOutput = AVCaptureVideoDataOutput()
-        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
-        videoOutput.alwaysDiscardsLateVideoFrames = true
 
+        let format = getPreferredVideoFormat(videoOutput: videoOutput)
+        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
+        videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
         captureSession!.addOutput(videoOutput)
         let deviceVideoOrientation = self.getVideoOrientation()
-        
 
-        // Adjust orientation for the video connection
         if let connection = videoOutput.connections.first {
             if connection.isVideoOrientationSupported {
                 connection.videoOrientation = deviceVideoOrientation
@@ -478,7 +446,11 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
 
         captureSession!.commitConfiguration()
 
-        // Move startRunning to a background thread to avoid blocking the main UI thread.
+#if os(iOS)
+        // Set up observer to update video orientation when interface orientation changes
+        setupInterfaceOrientationObserver()
+#endif
+
         DispatchQueue.global(qos: .background).async {
             self.captureSession!.startRunning()
 
@@ -491,12 +463,10 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                     dimensions = CMVideoDimensions()
                 }
 
-                // Turn on the torch if requested.
                 if (torch) {
                     self.turnTorchOn()
                 }
                 
-                // Set the initial zoom factor
                 if (initialZoom != nil) {
                     do {
                         try self.setScaleInternal(initialZoom!)
@@ -541,6 +511,38 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                 result(answer)
             }
         }
+    }
+
+    /// Get the preferred video format for the given video output.
+    private func getPreferredVideoFormat(videoOutput: AVCaptureVideoDataOutput) -> OSType {
+        // Define preferred pixel formats in order of preference
+        let preferredFormats: [OSType] = [
+            kCVPixelFormatType_32BGRA,
+            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        ]
+        
+        // Get available formats and convert from NSNumber to OSType
+        let availableFormats = videoOutput.availableVideoPixelFormatTypes
+        let availablePixelFormats = availableFormats.compactMap { ($0 as NSNumber).uint32Value }
+        
+        // Find the first preferred format that is available
+        for format in preferredFormats {
+            if availablePixelFormats.contains(format) {
+                return format
+            }
+        }
+        
+        if let firstAvailable = availablePixelFormats.first {
+            return firstAvailable
+        }
+        
+        // Ultimate fallback: use the original default format
+        return kCVPixelFormatType_32BGRA
+    }
+
+    private func getSupportedLenses(_ result: @escaping FlutterResult) {
+        result(MobileScannerCameraSelector.getSupportedLenses())
     }
 
     /// Turn the torch on.
@@ -673,27 +675,41 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
 #if os(iOS)
-    /// Set the device orientation if it differs from previous orientation
-    func setDeviceOrientation(orientation: UIDeviceOrientation) {
-        if (device == nil || deviceOrientation == orientation) {
-            return
-        }
-
-        deviceOrientation = orientation
-        updateOrientation(orientation: orientation)
-    }
-
-    /// Update the device orientation of the first open video output
-    func updateOrientation(orientation: UIDeviceOrientation) {
-        if let videoOutput = captureSession!.outputs.compactMap({ $0 as? AVCaptureVideoDataOutput }).first {
-            for connection in videoOutput.connections {
-                if connection.isVideoOrientationSupported {
-                    connection.videoOrientation = orientation.videoOrientation
-                }
+    /// Set up observer for interface orientation changes
+    private func setupInterfaceOrientationObserver() {
+        if #available(iOS 13.0, *) {
+            interfaceOrientationObserver = NotificationCenter.default.addObserver(
+                forName: UIDevice.orientationDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateVideoOrientationFromInterfaceOrientation()
             }
         }
     }
-    
+
+    /// Remove interface orientation observer
+    private func removeInterfaceOrientationObserver() {
+        if let observer = interfaceOrientationObserver {
+            NotificationCenter.default.removeObserver(observer)
+            interfaceOrientationObserver = nil
+        }
+    }
+
+    /// Update video orientation to match current interface orientation
+    private func updateVideoOrientationFromInterfaceOrientation() {
+        guard let videoOutput = captureSession?.outputs.compactMap({ $0 as? AVCaptureVideoDataOutput }).first else {
+            return
+        }
+
+        let newVideoOrientation = getVideoOrientation()
+
+        for connection in videoOutput.connections {
+            if connection.isVideoOrientationSupported {
+                connection.videoOrientation = newVideoOrientation
+            }
+        }
+    }
 #endif
 
     /// Reset the zoom factor of the camera
@@ -813,29 +829,30 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
     }
 
     private func releaseCamera() {
-        guard let captureSession = captureSession else {
-            return
-        }
-
-        guard let device = device else {
-            return
-        }
-
-        captureSession.stopRunning()
-        for input in captureSession.inputs {
-            captureSession.removeInput(input)
-        }
-        for output in captureSession.outputs {
-            captureSession.removeOutput(output)
-        }
-        device.removeObserver(self, forKeyPath: #keyPath(AVCaptureDevice.torchMode))
 #if os(iOS)
-        device.removeObserver(self, forKeyPath: #keyPath(AVCaptureDevice.videoZoomFactor))
+        removeInterfaceOrientationObserver()
 #endif
 
+        if let captureSession = captureSession {
+            captureSession.stopRunning()
+            for input in captureSession.inputs {
+                captureSession.removeInput(input)
+            }
+            for output in captureSession.outputs {
+                captureSession.removeOutput(output)
+            }
+
+            self.captureSession = nil
+        }
+
+        if let device = device {
+            device.removeObserver(self, forKeyPath: #keyPath(AVCaptureDevice.torchMode))
+#if os(iOS)
+            device.removeObserver(self, forKeyPath: #keyPath(AVCaptureDevice.videoZoomFactor))
+#endif
+            self.device = nil
+        }
         latestBuffer = nil
-        self.captureSession = nil
-        self.device = nil
     }
 
     private func releaseTexture() {
@@ -999,7 +1016,7 @@ class MapArgumentReader {
         }
         var barcodeFormats:[VNBarcodeSymbology] = []
         syms.forEach { id in
-            if let bc:VNBarcodeSymbology = VNBarcodeSymbology.fromInt(id) {
+            if let bc: VNBarcodeSymbology = VNBarcodeSymbology.fromInt(id) {
                 barcodeFormats.append(bc)
             }
         }
@@ -1112,8 +1129,10 @@ extension VNBarcodeObservation {
                 rawPayloadData = FlutterStandardTypedData(bytes: payloadData)
             }
         }
-        
-        
+
+        // Detect barcode type from payload string value using heuristics
+        let barcodeType = payloadStringValue?.detectBarcodeType()
+
         let data = [
             // Clockwise, starting from the top-left corner.
             "corners":  [
@@ -1131,6 +1150,7 @@ extension VNBarcodeObservation {
                 "width": width,
                 "height": height,
             ],
+            "type": barcodeType,
         ] as [String : Any?]
         return data
     }
@@ -1156,6 +1176,10 @@ extension VNBarcodeSymbology {
             return VNBarcodeSymbology.ean13
         case 64:
             return VNBarcodeSymbology.ean8
+        case 126:
+            return VNBarcodeSymbology.i2of5
+        case 127:
+            return VNBarcodeSymbology.i2of5Checksum
         case 128:
             return VNBarcodeSymbology.itf14
         case 256:
@@ -1190,6 +1214,10 @@ extension VNBarcodeSymbology {
             return 32
         case VNBarcodeSymbology.ean8:
             return 64
+        case VNBarcodeSymbology.i2of5:
+            return 126
+        case VNBarcodeSymbology.i2of5Checksum:
+            return 127
         case VNBarcodeSymbology.itf14:
             return 128
         case VNBarcodeSymbology.qr:

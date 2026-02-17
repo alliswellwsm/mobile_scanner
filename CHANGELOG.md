@@ -1,13 +1,35 @@
-## NEXT
+## 7.2.0
 
-* [Android] Removed deprecated renderscript api's, improved performance for analysis.
+**Highlights**
+
+* [Android & iOS] Added support for switching between lens types (normal, wide, zoom) using the `switchCamera()` method with `ToggleLensType` or `SelectCamera` options.
+
+**Improvements**
+
+* Added constants for testing the method channel methods in `MobileScannerMethods` and `MobileScannerEvents`.
+* Added support for `ITF-Two-of-Five` on iOS and MacOS.
+* The global method `calculateBoxFitRatio()` is now deprecated.
+
+**Bug Fixes**
+
+* [Android] Fixed an issue where the app orientation handling was not respecting auto-rotate settings
+* [Apple] Fixed a bug where the barcode type results did not have a value.
+* [Apple] Fixed camera rotating, even when rotation is locked.
+* Fixed a bug where taps were ignored on the scanner widget.
+* Fixed a bug where a controller that was only disposed would throw an incorrect error code.
+
+### 7.1.4
+
+* [Apple] Fixed crash on iPhone 17 when starting MobileScanner by checking available pixel formats before setting video output settings. ([#1578](https://github.com/juliansteenbakker/mobile_scanner/issues/1578))
 
 ### 7.1.3
 
-* [Android] Refactored orientation detection to use `OrientationEventListener` instead of `BroadcastReceiver` for `ACTION_CONFIGURATION_CHANGED`, ensuring physical device orientation is captured correctly and preventing unwanted screen rotations on `MobileScanner` initialization [](https://github.com/juliansteenbakker/mobile_scanner/issues/1486).
 * Overlay: Updated `BarcodePainter` to receive `deviceOrientation` and dynamically adjust `cameraPreviewSize`, fixing barcode overlay misalignment during device rotation changes [](https://github.com/juliansteenbakker/mobile_scanner/issues/1462).
 
+* [Android] Refactored orientation detection to use `OrientationEventListener` instead of `BroadcastReceiver` for `ACTION_CONFIGURATION_CHANGED`, ensuring physical device orientation is captured correctly and preventing unwanted screen rotations on `MobileScanner` initialization [](https://github.com/juliansteenbakker/mobile_scanner/issues/1486).
 * [Android] Changed minSDK from 21 to 23 in line with Flutter requirements.
+* [Android] Removed deprecated renderscript api's, improved performance for analysis.
+* [Apple] Prevent half-stopped camera state causing false ALREADY_STARTED.
 * [Apple] Fixed a bug where invalid images would cause crashes when processing them with CoreVideo.
 
 ## 7.1.2
