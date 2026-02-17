@@ -76,6 +76,7 @@ class MobileScanner(
     private var lastScanned: List<String?>? = null
     private var scannerTimeout = false
     private var displayListener: DisplayManager.DisplayListener? = null
+    private var imageAnalysis: ImageAnalysis? = null
     private var analysisExecutor = Executors.newSingleThreadExecutor()
 
     /// Configurable variables
@@ -444,13 +445,7 @@ class MobileScanner(
                     override fun onDisplayRemoved(displayId: Int) {}
 
                     override fun onDisplayChanged(displayId: Int) {
-                        val selector = ResolutionSelector.Builder().setResolutionStrategy(
-                            ResolutionStrategy(
-                                cameraResolution,
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                            )
-                        )
-                        analysisBuilder.setResolutionSelector(selector.build()).build()
+                        imageAnalysis?.targetRotation = activity.display?.rotation ?: Surface.ROTATION_0
                     }
                 }
 
@@ -460,6 +455,7 @@ class MobileScanner(
             }
 
             val analysis = analysisBuilder.build().apply { setAnalyzer(analysisExecutor, captureOutput) }
+            imageAnalysis = analysis
 
             try {
                 camera = cameraProvider?.bindToLifecycle(
