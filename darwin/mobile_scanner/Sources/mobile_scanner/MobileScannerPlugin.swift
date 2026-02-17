@@ -215,11 +215,23 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
                         }
 
                         DispatchQueue.main.async {
+#if os(iOS)
+                            // Always report portrait-ized dimensions on iOS,
+                            // matching the convention used in start().
+                            // The Dart-side BarcodePainter flips these back
+                            // when the device is in landscape orientation.
+                            let imageData: [String: Any?] = [
+                                "bytes": bytes,
+                                "width": Double(min(currentImage.width, currentImage.height)),
+                                "height": Double(max(currentImage.width, currentImage.height)),
+                            ]
+#else
                             let imageData: [String: Any?] = [
                                 "bytes": bytes,
                                 "width": Double(currentImage.width),
                                 "height": Double(currentImage.height),
                             ]
+#endif
 
                             self?.sink?([
                                 "name": "barcode",
