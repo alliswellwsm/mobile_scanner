@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 /// This widget represents an overlay that paints the bounding boxes of detected
@@ -39,6 +40,9 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
     textDirection: TextDirection.ltr,
   );
 
+  DeviceOrientation? _lastOrientation;
+  bool _orientationChanged = false;
+
   @override
   void dispose() {
     _textPainter.dispose();
@@ -55,9 +59,24 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
           return const SizedBox();
         }
 
+        // Mark stale when the device orientation changes,
+        // so the StreamBuilder discards its current snapshot.
+        if (_lastOrientation != null &&
+            _lastOrientation != value.deviceOrientation) {
+          _orientationChanged = true;
+        }
+        _lastOrientation = value.deviceOrientation;
+
         return StreamBuilder<BarcodeCapture>(
           stream: widget.controller.barcodes,
           builder: (context, snapshot) {
+            // Discard the stale snapshot from before the rotation.
+            // The next stream event will provide fresh corners.
+            if (_orientationChanged) {
+              _orientationChanged = false;
+              return const SizedBox();
+            }
+
             final barcodeCapture = snapshot.data;
 
             // No barcode or preview size.
