@@ -5,7 +5,7 @@ sealed class BarcodeBytes {
   const BarcodeBytes();
 }
 
-/// Decoded barcode bytes, available on all platforms.
+/// Decoded barcode bytes, available on Android and web.
 final class DecodedBarcodeBytes extends BarcodeBytes {
   /// Creates a new [DecodedBarcodeBytes] instance.
   const DecodedBarcodeBytes({required this.bytes});
