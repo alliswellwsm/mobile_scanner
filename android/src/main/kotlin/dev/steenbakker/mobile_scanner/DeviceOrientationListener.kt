@@ -65,6 +65,7 @@ class DeviceOrientationListener(
     fun stop() {
         val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.unregisterDisplayListener(displayListener)
+        onDisplayRotationChanged = null
     }
 
     @Suppress("deprecation")
