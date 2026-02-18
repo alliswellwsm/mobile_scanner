@@ -78,7 +78,7 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
                       cameraPreviewSize: barcodeCapture.size,
                       color: widget.color,
                       style: widget.style,
-                      barcodeValue: barcode.rawValue ?? '',
+                      barcodeValue: barcode.displayValue ?? '',
                       textPainter: _textPainter,
                       deviceOrientation: value.deviceOrientation,
                     ),
