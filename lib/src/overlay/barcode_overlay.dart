@@ -86,25 +86,10 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
           return const SizedBox();
         }
 
-        // Mark stale when the device orientation changes,
-        // so the StreamBuilder discards its current snapshot.
-        if (_lastOrientation != null &&
-            _lastOrientation != value.deviceOrientation) {
-          _orientationChanged = true;
-        }
-        _lastOrientation = value.deviceOrientation;
-
         return StreamBuilder<BarcodeCapture>(
           key: ValueKey(_orientationResetKey),
           stream: widget.controller.barcodes,
           builder: (context, snapshot) {
-            // Discard the stale snapshot from before the rotation.
-            // The next stream event will provide fresh corners.
-            if (_orientationChanged) {
-              _orientationChanged = false;
-              return const SizedBox();
-            }
-
             final barcodeCapture = snapshot.data;
 
             // No barcode or preview size.
