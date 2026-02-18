@@ -3,7 +3,7 @@
 **Highlights**
 
 * [Android & iOS] Added support for switching between lens types (normal, wide, zoom) using the `switchCamera()` method with `ToggleLensType` or `SelectCamera` options.
-* Added `rawDecodedBytes` field to `Barcode` which replaces `Barcode.rawBytes`. On Apple platforms with `rawPayloadData` available, this returns a `DecodedVisionBarcodeBytes` with both decoded bytes and raw payload bytes. On other platforms, it returns a `DecodedBarcodeBytes`.
+* Added `rawDecodedBytes` field to `Barcode` which replaces `Barcode.rawBytes`. On Apple platforms, this returns a `DecodedVisionBarcodeBytes` containing `bytes` (decoded payload, without header/padding) and `rawBytes` (full raw payload, available on iOS 17.0+ / macOS 14.0+). On Android and web, this returns a `DecodedBarcodeBytes` containing `bytes`.
 
 **Improvements**
 

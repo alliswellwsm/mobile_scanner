@@ -63,7 +63,7 @@ class Barcode {
     final BarcodeBytes? rawDecodedBytes;
     if (rawPayloadData != null) {
       rawDecodedBytes = DecodedVisionBarcodeBytes(
-        decodedBytes: rawBytesData,
+        bytes: rawBytesData,
         rawBytes: rawPayloadData,
       );
     } else if (rawBytesData != null) {

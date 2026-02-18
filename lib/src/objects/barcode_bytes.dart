@@ -10,7 +10,8 @@ final class DecodedBarcodeBytes extends BarcodeBytes {
   /// Creates a new [DecodedBarcodeBytes] instance.
   const DecodedBarcodeBytes({required this.bytes});
 
-  /// The decoded raw bytes of the barcode value.
+  /// The decoded raw bytes of the barcode value,
+  /// without header or padding bytes.
   final Uint8List bytes;
 }
 
@@ -21,11 +22,11 @@ final class DecodedBarcodeBytes extends BarcodeBytes {
 /// (including header and padding).
 final class DecodedVisionBarcodeBytes extends BarcodeBytes {
   /// Creates a new [DecodedVisionBarcodeBytes] instance.
-  const DecodedVisionBarcodeBytes({this.decodedBytes, this.rawBytes});
+  const DecodedVisionBarcodeBytes({this.bytes, this.rawBytes});
 
   /// The decoded raw bytes of the barcode value,
   /// without header or padding bytes.
-  final Uint8List? decodedBytes;
+  final Uint8List? bytes;
 
   /// The raw bytes from the Vision API, including header and padding bytes.
   /// Available on iOS 17.0+ / macOS 14.0+.
