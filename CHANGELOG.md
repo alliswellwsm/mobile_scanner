@@ -2,11 +2,15 @@
 
 **Improvements**
 
+* [Android] Migrated barcode bounding box from `boundingBox` to `cornerPoints` for more accurate scan window detection.
 * Added `rawDecodedBytes` field to `Barcode`. On Apple platforms with `rawPayloadData` available, this returns a `DecodedVisionBarcodeBytes` with both decoded bytes and raw payload bytes. On other platforms, it returns a `DecodedBarcodeBytes`.
 * Deprecated `Barcode.rawBytes` in favor of `rawDecodedBytes`.
 
 **Bug Fixes**
 
+* [Android] Fixed incorrect texture size on orientation change.
+* [Apple] Fixed barcode overlay position in landscape.
+* Fixed overlay rendering at wrong position after orientation change.
 * [Apple] Fixed `rawBytes` returning incorrect data for barcodes containing non-ASCII characters (e.g. `ø`). For QR codes, bytes are now extracted directly from the error-corrected bit stream via `CIQRCodeDescriptor`, bypassing the Vision string API entirely. For Aztec, DataMatrix, PDF417 and linear formats, the ISO-Latin-1 round-trip is used to recover the original bytes from `payloadStringValue`.
 * [Apple] Fixed `displayValue` returning a garbled Latin-1 string (e.g. `hellÃ¸`) for barcodes with non-ASCII UTF-8 content. It is now correctly decoded to UTF-8 (e.g. `hellø`).
 

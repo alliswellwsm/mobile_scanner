@@ -1,10 +1,8 @@
 package dev.steenbakker.mobile_scanner
 
 import android.app.Activity
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -75,7 +73,6 @@ class MobileScanner(
     private var scanner: BarcodeScanner? = null
     private var lastScanned: List<String?>? = null
     private var scannerTimeout = false
-    private var displayListener: DisplayManager.DisplayListener? = null
     private var imageAnalysis: ImageAnalysis? = null
     private var analysisExecutor = Executors.newSingleThreadExecutor()
 
@@ -321,13 +318,12 @@ class MobileScanner(
         barcode: Barcode,
         inputImage: ImageProxy
     ): Boolean {
-        // TODO: use `cornerPoints` instead, since the bounding box is not bound to the coordinate system of the input image
-        // On iOS we do this correctly, so the calculation should match that.
-        val barcodeBoundingBox = barcode.boundingBox ?: return false
+        val cornerPoints = barcode.cornerPoints ?: return false
 
         try {
-            val imageWidth = inputImage.height
-            val imageHeight = inputImage.width
+            val rotationDegrees = inputImage.imageInfo.rotationDegrees
+            val imageWidth = if (rotationDegrees % 180 == 0) inputImage.width else inputImage.height
+            val imageHeight = if (rotationDegrees % 180 == 0) inputImage.height else inputImage.width
 
             val left = (scanWindow[0] * imageWidth).roundToInt()
             val top = (scanWindow[1] * imageHeight).roundToInt()
@@ -336,7 +332,7 @@ class MobileScanner(
 
             val scaledScanWindow = Rect(left, top, right, bottom)
 
-            return scaledScanWindow.contains(barcodeBoundingBox)
+            return cornerPoints.all { scaledScanWindow.contains(it.x, it.y) }
         } catch (_: IllegalArgumentException) {
             // Rounding of the scan window dimensions can fail, due to encountering NaN.
             // If we get NaN, rather than give a false positive, just return false.
@@ -427,7 +423,6 @@ class MobileScanner(
             val analysisBuilder = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_YUV_420_888)
-            val displayManager = activity.applicationContext.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
 
             val cameraResolution =  cameraResolutionWanted ?: Size(1920, 1080)
 
@@ -440,20 +435,8 @@ class MobileScanner(
             )
             analysisBuilder.setResolutionSelector(selectorBuilder.build()).build()
 
-            if (displayListener == null) {
-                displayListener = object : DisplayManager.DisplayListener {
-                    override fun onDisplayAdded(displayId: Int) {}
-
-                    override fun onDisplayRemoved(displayId: Int) {}
-
-                    override fun onDisplayChanged(displayId: Int) {
-                        imageAnalysis?.targetRotation = activity.display?.rotation ?: Surface.ROTATION_0
-                    }
-                }
-
-                displayManager.registerDisplayListener(
-                    displayListener, null,
-                )
+            deviceOrientationListener.onDisplayRotationChanged = { rotation ->
+                imageAnalysis?.targetRotation = rotation
             }
 
             val analysis = analysisBuilder.build().apply { setAnalyzer(analysisExecutor, captureOutput) }
@@ -588,13 +571,6 @@ class MobileScanner(
 //    }
 
     private fun releaseCamera() {
-        if (displayListener != null) {
-            val displayManager = activity.applicationContext.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-
-            displayManager.unregisterDisplayListener(displayListener)
-            displayListener = null
-        }
-
         val owner = activity as LifecycleOwner
         // Release the camera observers first.
         camera?.cameraInfo?.let {
@@ -606,6 +582,7 @@ class MobileScanner(
         // Unbind the camera use cases, the preview is a use case.
         // The camera will be closed when the last use case is unbound.
         cameraProvider?.unbindAll()
+        imageAnalysis = null
 
         // Release the surface for the preview.
         surfaceProducer?.release()
