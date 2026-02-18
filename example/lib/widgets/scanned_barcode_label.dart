@@ -27,7 +27,7 @@ class ScannedBarcodeLabel extends StatelessWidget {
         if (scannedBarcodes.any((e) => e.displayValue != null)) {
           final String displayValues = scannedBarcodes
               .map((e) => e.displayValue)
-              .whereType<String>()
+              .nonNulls
               .join('\n');
 
           return Text(
@@ -40,7 +40,7 @@ class ScannedBarcodeLabel extends StatelessWidget {
         if (scannedBarcodes.any((e) => e.rawValue != null)) {
           final String rawValues = scannedBarcodes
               .map((e) => e.rawValue)
-              .whereType<String>()
+              .nonNulls
               .join('\n');
 
           return Text(
