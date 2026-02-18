@@ -30,7 +30,7 @@ class DeviceOrientationListener(
     // The last received orientation. This is used to prevent duplicate events.
     private var lastOrientation: PlatformChannel.DeviceOrientation? = null
 
-    /// Called with the new [Surface.ROTATION_*] value whenever the display rotation changes.
+    // Called with the new [Surface.ROTATION_*] value whenever the display rotation changes.
     var onDisplayRotationChanged: ((Int) -> Unit)? = null
 
     // Listener for display configuration changes.
@@ -65,6 +65,7 @@ class DeviceOrientationListener(
     fun stop() {
         val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         displayManager.unregisterDisplayListener(displayListener)
+        onDisplayRotationChanged = null
     }
 
     @Suppress("deprecation")

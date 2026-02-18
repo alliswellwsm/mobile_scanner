@@ -41,12 +41,39 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
   );
 
   DeviceOrientation? _lastOrientation;
-  bool _orientationChanged = false;
+  int _orientationResetKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant BarcodeOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      widget.controller.addListener(_onControllerChanged);
+      _lastOrientation = null;
+    }
+  }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
     _textPainter.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    final orientation = widget.controller.value.deviceOrientation;
+    if (_lastOrientation != null && _lastOrientation != orientation) {
+      setState(() {
+        _orientationResetKey++;
+      });
+    }
+    _lastOrientation = orientation;
   }
 
   @override
@@ -68,6 +95,7 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
         _lastOrientation = value.deviceOrientation;
 
         return StreamBuilder<BarcodeCapture>(
+          key: ValueKey(_orientationResetKey),
           stream: widget.controller.barcodes,
           builder: (context, snapshot) {
             // Discard the stale snapshot from before the rotation.

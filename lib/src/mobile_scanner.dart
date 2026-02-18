@@ -252,13 +252,12 @@ class _MobileScannerState extends State<MobileScanner>
         ScanWindowUtils.calculateScanWindowRelativeToTextureInPercentage(
           widget.fit,
           widgetScanWindow,
-          textureSize:
-              scannerState.deviceOrientation ==
-                          DeviceOrientation.landscapeLeft ||
-                      scannerState.deviceOrientation ==
-                          DeviceOrientation.landscapeRight
-                  ? scannerState.size.flipped
-                  : scannerState.size,
+          textureSize: switch (scannerState.deviceOrientation) {
+            DeviceOrientation.landscapeLeft ||
+            DeviceOrientation.landscapeRight => scannerState.size.flipped,
+            DeviceOrientation.portraitUp ||
+            DeviceOrientation.portraitDown => scannerState.size,
+          },
           widgetSize: constraints.biggest,
         );
 
