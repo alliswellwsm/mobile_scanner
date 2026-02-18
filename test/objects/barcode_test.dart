@@ -146,7 +146,9 @@ void main() {
         'creates DecodedVisionBarcodeBytes with rawBytes and rawPayloadData',
         () {
           final rawBytes = Uint8List.fromList([72, 101, 108, 108, 111]);
-          final rawPayloadData = Uint8List.fromList([0, 1, 72, 101, 108]);
+          final rawPayloadData = Uint8List.fromList(
+            [0, 1, 72, 101, 108, 108, 111],
+          );
           final barcode = Barcode.fromNative(<Object?, Object?>{
             'rawBytes': rawBytes,
             'rawPayloadData': rawPayloadData,
