@@ -24,11 +24,11 @@ class ScannedBarcodeLabel extends StatelessWidget {
           );
         }
 
-        final String displayValues = scannedBarcodes
-            .map((e) => e.displayValue)
-            .join('\n');
-
         if (scannedBarcodes.any((e) => e.displayValue != null)) {
+          final String displayValues = scannedBarcodes
+              .map((e) => e.displayValue)
+              .join('\n');
+
           return Text(
             'Display values: $displayValues',
             overflow: TextOverflow.fade,
@@ -36,11 +36,11 @@ class ScannedBarcodeLabel extends StatelessWidget {
           );
         }
 
-        final String rawValues = scannedBarcodes
-            .map((e) => e.rawValue)
-            .join('\n');
-
         if (scannedBarcodes.any((e) => e.rawValue != null)) {
+          final String rawValues = scannedBarcodes
+              .map((e) => e.rawValue)
+              .join('\n');
+
           return Text(
             'Raw values: $rawValues',
             overflow: TextOverflow.fade,
@@ -48,12 +48,12 @@ class ScannedBarcodeLabel extends StatelessWidget {
           );
         }
 
-        final String rawBytes = scannedBarcodes
-            .map((e) => e.rawBytes)
+        final String rawDecodedBytes = scannedBarcodes
+            .map((e) => e.rawDecodedBytes)
             .join('\n');
 
         return Text(
-          'Raw bytes: $rawBytes',
+          'Raw bytes: $rawDecodedBytes',
           overflow: TextOverflow.fade,
           style: const TextStyle(color: Colors.white),
         );
