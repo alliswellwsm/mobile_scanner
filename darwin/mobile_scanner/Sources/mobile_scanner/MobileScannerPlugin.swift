@@ -1121,10 +1121,38 @@ extension VNBarcodeObservation {
         let width = distanceBetween(adjustedTopLeft, adjustedTopRight) * CGFloat(imageWidth)
         let height = distanceBetween(adjustedTopLeft, adjustedBottomLeft) * CGFloat(imageHeight)
         var rawBytes: FlutterStandardTypedData? = nil
-        
+        var rawPayloadData: FlutterStandardTypedData? = nil
+        var displayValue: String? = payloadStringValue
+
+        // QR codes: parse the error-corrected payload bit stream directly.
+        // This correctly recovers the original bytes from Byte-mode segments,
+        // including non-ASCII content such as UTF-8 encoded text.
+        if let qrDescriptor = barcodeDescriptor as? CIQRCodeDescriptor,
+           let parsed = BarcodePayloadParser.parseQRPayload(from: qrDescriptor) {
+            rawBytes = FlutterStandardTypedData(bytes: parsed)
+            if let utf8String = String(data: parsed, encoding: .utf8) {
+                displayValue = utf8String
+            }
+        }
+
+        // Aztec, DataMatrix, PDF417, and linear formats: use the ISO-Latin-1
+        // round-trip. Apple Vision decodes raw payload bytes as Latin-1
+        // characters in payloadStringValue, so re-encoding back to Latin-1
+        // recovers the original bytes for values in the range 0x00–0x7F and
+        // 0xA0–0xFF. Bytes in 0x80–0x9F are not recoverable this way. see
+        // README for the full platform limitation note.
+        if rawBytes == nil, let string = payloadStringValue {
+            if let data = string.data(using: .isoLatin1) {
+                rawBytes = FlutterStandardTypedData(bytes: data)
+                if let utf8String = String(data: data, encoding: .utf8) {
+                    displayValue = utf8String
+                }
+            }
+        }
+
         if #available(iOS 17.0, macOS 14.0, *) {
             if let payloadData = payloadData {
-                rawBytes = FlutterStandardTypedData(bytes: payloadData)
+                rawPayloadData = FlutterStandardTypedData(bytes: payloadData)
             }
         }
 
@@ -1141,8 +1169,9 @@ extension VNBarcodeObservation {
             ],
             "format": symbology.toInt ?? -1,
             "rawBytes": rawBytes,
+            "rawPayloadData": rawPayloadData,
             "rawValue": payloadStringValue,
-            "displayValue": payloadStringValue,
+            "displayValue": displayValue,
             "size": [
                 "width": width,
                 "height": height,

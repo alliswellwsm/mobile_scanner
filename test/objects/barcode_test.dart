@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/barcode_type.dart';
 import 'package:mobile_scanner/src/objects/barcode.dart';
+import 'package:mobile_scanner/src/objects/barcode_bytes.dart';
 import 'package:mobile_scanner/src/objects/calendar_event.dart';
 import 'package:mobile_scanner/src/objects/contact_info.dart';
 import 'package:mobile_scanner/src/objects/driver_license.dart';
@@ -31,6 +32,7 @@ void main() {
         expect(barcode.geoPoint, isNull);
         expect(barcode.phone, isNull);
         expect(barcode.rawBytes, isNull);
+        expect(barcode.rawDecodedBytes, isNull);
         expect(barcode.rawValue, isNull);
         expect(barcode.size, Size.zero);
         expect(barcode.sms, isNull);
@@ -109,6 +111,7 @@ void main() {
         expect(barcode.geoPoint, isNull);
         expect(barcode.phone, isNull);
         expect(barcode.rawBytes, isNull);
+        expect(barcode.rawDecodedBytes, isNull);
         expect(barcode.rawValue, isNull);
         expect(barcode.size, Size.zero);
         expect(barcode.sms, isNull);
@@ -134,7 +137,33 @@ void main() {
         });
 
         expect(barcode.rawBytes, rawBytes);
+        expect(barcode.rawDecodedBytes, isA<DecodedBarcodeBytes>());
+        final decoded = barcode.rawDecodedBytes! as DecodedBarcodeBytes;
+        expect(decoded.bytes, rawBytes);
+        expect(decoded.bytes, equals([72, 101, 108, 108, 111]));
       });
+
+      test(
+        'creates DecodedVisionBarcodeBytes with rawBytes and rawPayloadData',
+        () {
+          final rawBytes = Uint8List.fromList([72, 101, 108, 108, 111]);
+          final rawPayloadData = Uint8List.fromList(
+            [0, 1, 72, 101, 108, 108, 111],
+          );
+          final barcode = Barcode.fromNative(<Object?, Object?>{
+            'rawBytes': rawBytes,
+            'rawPayloadData': rawPayloadData,
+          });
+
+          expect(barcode.rawBytes, rawBytes);
+          expect(barcode.rawDecodedBytes, isA<DecodedVisionBarcodeBytes>());
+          final decoded = barcode.rawDecodedBytes! as DecodedVisionBarcodeBytes;
+          expect(decoded.bytes, rawBytes);
+          expect(decoded.bytes, equals([72, 101, 108, 108, 111]));
+          expect(decoded.rawBytes, rawPayloadData);
+          expect(decoded.rawBytes, equals([0, 1, 72, 101, 108, 108, 111]));
+        },
+      );
 
       test('creates instance with format', () {
         final barcode = Barcode.fromNative(<Object?, Object?>{
