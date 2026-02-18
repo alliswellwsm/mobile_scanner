@@ -1159,14 +1159,29 @@ extension VNBarcodeObservation {
         // Detect barcode type from payload string value using heuristics
         let barcodeType = payloadStringValue?.detectBarcodeType()
 
+        // On macOS, the front camera image is horizontally mirrored relative to
+        // Vision's coordinate labels, so topLeft/topRight (and bottomLeft/bottomRight)
+        // are swapped in screen space. Swap them here so that corners[0]→corners[1]
+        // points left-to-right in screen space, which is required for correct
+        // overlay text angle calculation.
+#if os(macOS)
+        let corners: [[String: CGFloat]] = [
+            ["x": topRightX, "y": topRightY],
+            ["x": topLeftX, "y": topLeftY],
+            ["x": bottomLeftX, "y": bottomLeftY],
+            ["x": bottomRightX, "y": bottomRightY],
+        ]
+#else
+        let corners: [[String: CGFloat]] = [
+            ["x": topLeftX, "y": topLeftY],
+            ["x": topRightX, "y": topRightY],
+            ["x": bottomRightX, "y": bottomRightY],
+            ["x": bottomLeftX, "y": bottomLeftY],
+        ]
+#endif
         let data = [
             // Clockwise, starting from the top-left corner.
-            "corners":  [
-                ["x": topLeftX, "y": topLeftY],
-                ["x": topRightX, "y": topRightY],
-                ["x": bottomRightX, "y": bottomRightY],
-                ["x": bottomLeftX, "y": bottomLeftY],
-            ],
+            "corners": corners,
             "format": symbology.toInt ?? -1,
             "rawBytes": rawBytes,
             "rawPayloadData": rawPayloadData,
