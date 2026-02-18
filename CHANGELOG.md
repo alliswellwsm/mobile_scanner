@@ -22,6 +22,7 @@
 * [Apple] Fixed `displayValue` returning a garbled Latin-1 string (e.g. `hellÃ¸`) for barcodes with non-ASCII UTF-8 content. It is now correctly decoded to UTF-8 (e.g. `hellø`).
 * [Apple] Fixed a bug where the barcode type results did not have a value.
 * [Apple] Fixed camera rotating, even when rotation is locked.
+* [macOS] Fixed barcode overlay text displaying upside down.
 * Fixed barcode overlay rendering at wrong position after orientation change.
 * Fixed a bug where taps were ignored on the scanner widget.
 * Fixed a bug where a controller that was only disposed would throw an incorrect error code.
