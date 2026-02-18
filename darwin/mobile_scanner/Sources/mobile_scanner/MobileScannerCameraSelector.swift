@@ -19,10 +19,12 @@ class MobileScannerCameraSelector {
         switch deviceType {
         case .builtInWideAngleCamera:
             return .wideAngle
+#if os(iOS)
         case .builtInUltraWideCamera:
             return .ultraWide
         case .builtInTelephotoCamera:
             return .telephoto
+#endif
         default:
             return nil
         }
