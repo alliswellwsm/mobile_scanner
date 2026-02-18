@@ -26,6 +26,9 @@ final class DecodedVisionBarcodeBytes extends BarcodeBytes {
 
   /// The decoded raw bytes of the barcode value,
   /// without header or padding bytes.
+  ///
+  /// This is null if removing the header or padding bytes from [rawBytes]
+  /// failed.
   final Uint8List? bytes;
 
   /// The raw bytes from the Vision API, including header and padding bytes.
