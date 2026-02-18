@@ -181,8 +181,11 @@ class Barcode {
   /// This is null if the raw bytes are not available.
   final BarcodeBytes? rawDecodedBytes;
 
-  /// The raw value of `UTF-8` encoded barcodes on Android.
-  /// On Apple (iOS and macOS), this value can also be Latin-1 (ISO 8859-1)
+  /// The raw string value of the barcode.
+  ///
+  /// On Android, this is the UTF-8 decoded string value.
+  /// On Apple (iOS and macOS), this is Apple's `payloadStringValue` as-is,
+  /// which is decoded using Latin-1 (ISO 8859-1) for non-QR barcodes.
   ///
   /// Structured values are not parsed,
   /// for example: 'MEBKM:TITLE:Google;URL://www.google.com;;'.
