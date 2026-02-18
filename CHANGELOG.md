@@ -1,3 +1,14 @@
+## NEXT
+
+**Improvements**
+
+* [Android] Migrated barcode bounding box from `boundingBox` to `cornerPoints` for more accurate scan window detection.
+
+**Bug Fixes**
+
+* [Android] Fixed incorrect texture size on orientation change.
+* Fixed overlay rendering at wrong position after orientation change.
+
 ## 7.2.0
 
 **Highlights**
