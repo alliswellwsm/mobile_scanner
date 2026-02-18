@@ -22,15 +22,18 @@ final class DecodedBarcodeBytes extends BarcodeBytes {
 /// (including header and padding).
 final class DecodedVisionBarcodeBytes extends BarcodeBytes {
   /// Creates a new [DecodedVisionBarcodeBytes] instance.
-  const DecodedVisionBarcodeBytes({this.bytes, this.rawBytes});
+  const DecodedVisionBarcodeBytes({required this.rawBytes, this.bytes});
 
   /// The decoded raw bytes of the barcode value,
   /// without header or padding bytes.
   final Uint8List? bytes;
 
   /// The raw bytes from the Vision API, including header and padding bytes.
-  /// Available on iOS 17.0+ / macOS 14.0+.
+  ///
   /// If the original barcode is not encoded in UTF-8,
   /// this field can be used for manual conversion.
-  final Uint8List? rawBytes;
+  ///
+  /// Only available on iOS 17.0+ / macOS 14.0+. On older OS versions,
+  /// [DecodedVisionBarcodeBytes] will not be returned.
+  final Uint8List rawBytes;
 }
