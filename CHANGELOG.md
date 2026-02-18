@@ -1,3 +1,10 @@
+## NEXT
+
+**Bug Fixes**
+
+* [Apple] Fixed `rawBytes` returning incorrect data for barcodes containing non-ASCII characters (e.g. `ø`). For QR codes, bytes are now extracted directly from the error-corrected bit stream via `CIQRCodeDescriptor`, bypassing the Vision string API entirely. For Aztec, DataMatrix, PDF417 and linear formats, the ISO-Latin-1 round-trip is used to recover the original bytes from `payloadStringValue`.
+* [Apple] Fixed `displayValue` returning a garbled Latin-1 string (e.g. `hellÃ¸`) for barcodes with non-ASCII UTF-8 content. It is now correctly decoded to UTF-8 (e.g. `hellø`).
+
 ## 7.2.0
 
 **Highlights**
