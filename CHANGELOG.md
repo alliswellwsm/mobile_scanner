@@ -7,6 +7,7 @@
 **Bug Fixes**
 
 * [Android] Fixed incorrect texture size on orientation change.
+* [Apple] Fixed barcode overlay position in landscape.
 * Fixed overlay rendering at wrong position after orientation change.
 
 ## 7.2.0
