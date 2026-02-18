@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Size
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ExperimentalLensFacing
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -32,6 +31,13 @@ class MobileScannerHandler(
     private val permissions: MobileScannerPermissions,
     private val addPermissionListener: (RequestPermissionsResultListener) -> Unit,
     textureRegistry: TextureRegistry): MethodChannel.MethodCallHandler {
+
+    /**
+     * Cached CameraManager instance to avoid repeated system service lookups.
+     */
+    private val cameraManager: CameraManager by lazy {
+        activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+    }
 
     private val analyzeImageErrorCallback: AnalyzerErrorCallback = {
         Handler(Looper.getMainLooper()).post {
@@ -147,6 +153,7 @@ class MobileScannerHandler(
             "pause" -> pause(call, result)
             "stop" -> stop(call, result)
             "toggleTorch" -> toggleTorch(result)
+            "getSupportedLenses" -> getSupportedLenses(result)
             "analyzeImage" -> analyzeImage(call, result)
             "setScale" -> setScale(call, result)
             "resetScale" -> resetScale(result)
@@ -161,6 +168,7 @@ class MobileScannerHandler(
     private fun start(call: MethodCall, result: MethodChannel.Result) {
         val torch: Boolean = call.argument<Boolean>("torch") ?: false
         val facing: Int = call.argument<Int>("facing") ?: 0
+        val lensType: Int = call.argument<Int>("lensType") ?: -1
         val formats: List<Int>? = call.argument<List<Int>>("formats")
         val returnImage: Boolean = call.argument<Boolean>("returnImage") ?: false
         val speed: Int = call.argument<Int>("speed") ?: 1
@@ -173,12 +181,11 @@ class MobileScannerHandler(
             null
         }
         val invertImage: Boolean = call.argument<Boolean>("invertImage") ?: false
-        val initialZoom: Double = call.argument<Double>("initialZoom") ?: 1.0
+        val initialZoom: Double? = call.argument<Double?>("initialZoom")
 
         val barcodeScannerOptions: BarcodeScannerOptions? = buildBarcodeScannerOptions(formats, autoZoom)
 
-        val position =
-            if (facing == 0) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+        val position = MobileScannerCameraLensSelector.selectCamera(cameraManager, facing, lensType)
 
         val detectionSpeed: DetectionSpeed = when (speed) {
             0 -> DetectionSpeed.NO_DUPLICATES
@@ -290,6 +297,22 @@ class MobileScannerHandler(
         result.success(null)
     }
 
+    /**
+     * Get the list of supported lens types on this device.
+     */
+    private fun getSupportedLenses(result: MethodChannel.Result) {
+        try {
+            val supportedLenses = MobileScannerCameraLensSelector.getSupportedLenses(cameraManager)
+            result.success(supportedLenses.toList())
+        } catch (e: Exception) {
+            result.error(
+                MobileScannerErrorCodes.GENERIC_ERROR,
+                e.localizedMessage ?: MobileScannerErrorCodes.GENERIC_ERROR_MESSAGE,
+                null
+            )
+        }
+    }
+
     private fun setScale(call: MethodCall, result: MethodChannel.Result) {
         try {
             mobileScanner!!.setScale(call.arguments as Double)
@@ -360,7 +383,6 @@ class MobileScannerHandler(
     }
 
     private fun getMaxZoomRatio(): Float {
-        val cameraManager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         var maxZoom = 1.0F
 
         try {
