@@ -140,6 +140,7 @@ void main() {
         expect(barcode.rawDecodedBytes, isA<DecodedBarcodeBytes>());
         final decoded = barcode.rawDecodedBytes! as DecodedBarcodeBytes;
         expect(decoded.bytes, rawBytes);
+        expect(decoded.bytes, equals([72, 101, 108, 108, 111]));
       });
 
       test(
@@ -158,7 +159,9 @@ void main() {
           expect(barcode.rawDecodedBytes, isA<DecodedVisionBarcodeBytes>());
           final decoded = barcode.rawDecodedBytes! as DecodedVisionBarcodeBytes;
           expect(decoded.bytes, rawBytes);
+          expect(decoded.bytes, equals([72, 101, 108, 108, 111]));
           expect(decoded.rawBytes, rawPayloadData);
+          expect(decoded.rawBytes, equals([0, 1, 72, 101, 108, 108, 111]));
         },
       );
 
