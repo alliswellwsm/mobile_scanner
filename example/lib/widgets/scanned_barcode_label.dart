@@ -28,14 +28,6 @@ class ScannedBarcodeLabel extends StatelessWidget {
             .map((e) => e.displayValue)
             .join('\n');
 
-        debugPrint('debug displayValue: ${scannedBarcodes.first.displayValue}');
-        debugPrint('debug rawValue: ${scannedBarcodes.first.rawValue}');
-        debugPrint('debug rawBytes: ${scannedBarcodes.first.rawBytes}');
-        debugPrint(
-          'debug rawPayloadData: '
-          '${scannedBarcodes.first.rawPayloadData}',
-        );
-
         if (scannedBarcodes.any((e) => e.displayValue != null)) {
           return Text(
             'Display values: $displayValues',
