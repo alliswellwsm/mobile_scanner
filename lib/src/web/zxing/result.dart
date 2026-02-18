@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/barcode_type.dart';
 import 'package:mobile_scanner/src/objects/barcode.dart';
+import 'package:mobile_scanner/src/objects/barcode_bytes.dart';
 import 'package:mobile_scanner/src/web/zxing/result_point.dart';
 
 /// The JS static interop class for the Result class in the ZXing library.
@@ -145,11 +146,19 @@ extension type Result(JSObject _) implements JSObject {
     // implementation.
     final corners = resultPoints;
 
+    final rawBytesData = rawBytes;
+
     return Barcode(
       corners: corners,
       format: barcodeFormat,
       displayValue: text,
-      rawBytes: rawBytes,
+      // Populate deprecated rawBytes for backward compatibility.
+      // ignore: deprecated_member_use_from_same_package
+      rawBytes: rawBytesData,
+      rawDecodedBytes:
+          rawBytesData != null
+              ? DecodedBarcodeBytes(bytes: rawBytesData)
+              : null,
       rawValue: text,
       size: _computeSize(corners),
       type: BarcodeType.text,

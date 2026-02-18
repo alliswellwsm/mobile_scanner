@@ -1,5 +1,10 @@
 ## NEXT
 
+**Improvements**
+
+* Added `rawDecodedBytes` field to `Barcode`. On Apple platforms with `rawPayloadData` available, this returns a `DecodedVisionBarcodeBytes` with both decoded bytes and raw payload bytes. On other platforms, it returns a `DecodedBarcodeBytes`.
+* Deprecated `Barcode.rawBytes` in favor of `rawDecodedBytes`.
+
 **Bug Fixes**
 
 * [Apple] Fixed `rawBytes` returning incorrect data for barcodes containing non-ASCII characters (e.g. `ø`). For QR codes, bytes are now extracted directly from the error-corrected bit stream via `CIQRCodeDescriptor`, bypassing the Vision string API entirely. For Aztec, DataMatrix, PDF417 and linear formats, the ISO-Latin-1 round-trip is used to recover the original bytes from `payloadStringValue`.

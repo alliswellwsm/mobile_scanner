@@ -6,6 +6,7 @@ import 'dart:ui';
 
 import 'package:mobile_scanner/src/enums/barcode_format.dart';
 import 'package:mobile_scanner/src/enums/barcode_type.dart';
+import 'package:mobile_scanner/src/objects/barcode_bytes.dart';
 import 'package:mobile_scanner/src/objects/calendar_event.dart';
 import 'package:mobile_scanner/src/objects/contact_info.dart';
 import 'package:mobile_scanner/src/objects/driver_license.dart';
@@ -29,8 +30,8 @@ class Barcode {
     this.format = BarcodeFormat.unknown,
     this.geoPoint,
     this.phone,
-    this.rawBytes,
-    this.rawPayloadData,
+    @Deprecated('Use rawDecodedBytes instead.') this.rawBytes,
+    this.rawDecodedBytes,
     this.rawValue,
     this.size = Size.zero,
     this.sms,
@@ -55,6 +56,21 @@ class Barcode {
 
     final barcodeWidth = size?['width'] as double?;
     final barcodeHeight = size?['height'] as double?;
+
+    final rawBytesData = data['rawBytes'] as Uint8List?;
+    final rawPayloadData = data['rawPayloadData'] as Uint8List?;
+
+    final BarcodeBytes? rawDecodedBytes;
+    if (rawPayloadData != null) {
+      rawDecodedBytes = DecodedVisionBarcodeBytes(
+        decodedBytes: rawBytesData,
+        rawBytes: rawPayloadData,
+      );
+    } else if (rawBytesData != null) {
+      rawDecodedBytes = DecodedBarcodeBytes(bytes: rawBytesData);
+    } else {
+      rawDecodedBytes = null;
+    }
 
     return Barcode(
       calendarEvent:
@@ -85,8 +101,10 @@ class Barcode {
       format: BarcodeFormat.fromRawValue(data['format'] as int? ?? -1),
       geoPoint: geoPoint == null ? null : GeoPoint.fromNative(geoPoint),
       phone: phone == null ? null : Phone.fromNative(phone),
-      rawBytes: data['rawBytes'] as Uint8List?,
-      rawPayloadData: data['rawPayloadData'] as Uint8List?,
+      // Populate deprecated rawBytes for backward compatibility.
+      // ignore: deprecated_member_use_from_same_package
+      rawBytes: rawBytesData,
+      rawDecodedBytes: rawDecodedBytes,
       rawValue: data['rawValue'] as String?,
       size:
           barcodeWidth == null || barcodeHeight == null
@@ -130,8 +148,6 @@ class Barcode {
   /// This value may be multiline if line breaks are encoded in the barcode.
   /// This value may include the supplement value.
   ///
-  /// On Apple (iOS & macOS) this value will always be UTF-8.
-  ///
   /// This is null if there is no user-friendly value for the given barcode.
   final String? displayValue;
 
@@ -153,14 +169,17 @@ class Barcode {
   /// The raw bytes of the barcode.
   ///
   /// This is null if the raw bytes are not available.
+  @Deprecated('Use rawDecodedBytes instead.')
   final Uint8List? rawBytes;
 
-  /// The raw bytes of the barcode, including header & padding bytes.
-  /// Only available on Apple (iOS & macOS).
+  /// The decoded raw bytes of the barcode.
   ///
-  /// If the barcode data is not UTF-8 encoded, this is the only way to access
-  /// the data.
-  final Uint8List? rawPayloadData;
+  /// This is either a [DecodedBarcodeBytes] (on Android and web)
+  /// or a [DecodedVisionBarcodeBytes] (on Apple platforms),
+  /// which may contain both decoded bytes and raw payload bytes.
+  ///
+  /// This is null if the raw bytes are not available.
+  final BarcodeBytes? rawDecodedBytes;
 
   /// The raw value of `UTF-8` encoded barcodes on Android.
   /// On Apple (iOS and macOS), this value can also be Latin-1 (ISO 8859-1)
@@ -168,7 +187,7 @@ class Barcode {
   /// Structured values are not parsed,
   /// for example: 'MEBKM:TITLE:Google;URL://www.google.com;;'.
   ///
-  /// For non-UTF-8 barcodes, prefer using [rawBytes] instead.
+  /// For non-UTF-8 barcodes, prefer using [rawDecodedBytes] instead.
   ///
   /// This is null if the raw value is not available.
   final String? rawValue;
