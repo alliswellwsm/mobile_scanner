@@ -262,6 +262,13 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   }
 
   @override
+  Stream<String> get cameraStateErrorStream {
+    return eventsStream
+        .where((event) => event['name'] == 'error')
+        .map((event) => event['data'] as String? ?? '');
+  }
+
+  @override
   Future<BarcodeCapture?> analyzeImage(
     String path, {
     List<BarcodeFormat> formats = const <BarcodeFormat>[],

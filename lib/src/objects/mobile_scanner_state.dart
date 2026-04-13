@@ -22,6 +22,7 @@ class MobileScannerState {
     required this.torchState,
     required this.zoomScale,
     required this.deviceOrientation,
+    required this.receivedFirstFrame,
     this.error,
   });
 
@@ -38,6 +39,7 @@ class MobileScannerState {
         torchState: TorchState.unavailable,
         deviceOrientation: DeviceOrientation.portraitUp,
         zoomScale: 1,
+        receivedFirstFrame: false,
       );
 
   /// The number of available cameras.
@@ -89,6 +91,9 @@ class MobileScannerState {
         error?.errorCode != MobileScannerErrorCode.permissionDenied;
   }
 
+  /// camera receive first frame
+  final bool receivedFirstFrame;
+
   /// Create a copy of this state with the given parameters.
   MobileScannerState copyWith({
     int? availableCameras,
@@ -102,6 +107,7 @@ class MobileScannerState {
     TorchState? torchState,
     DeviceOrientation? deviceOrientation,
     double? zoomScale,
+    bool? receivedFirstFrame,
   }) {
     return MobileScannerState(
       availableCameras: availableCameras ?? this.availableCameras,
@@ -115,6 +121,7 @@ class MobileScannerState {
       torchState: torchState ?? this.torchState,
       deviceOrientation: deviceOrientation ?? this.deviceOrientation,
       zoomScale: zoomScale ?? this.zoomScale,
+      receivedFirstFrame: receivedFirstFrame ?? this.receivedFirstFrame,
     );
   }
 }

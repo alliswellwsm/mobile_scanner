@@ -22,6 +22,8 @@ import 'package:mobile_scanner/src/objects/mobile_scanner_state.dart';
 import 'package:mobile_scanner/src/objects/start_options.dart';
 import 'package:mobile_scanner/src/objects/switch_camera_option.dart';
 
+typedef CameraStateErrorCallback = void Function(String error);
+
 /// The controller for the [MobileScanner] widget.
 class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Construct a new [MobileScannerController] instance.
@@ -36,8 +38,9 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     this.returnImage = false,
     this.torchEnabled = false,
     this.invertImage = false,
-    this.autoZoom = false,
+    this.autoZoom = true,
     this.initialZoom,
+    this.cameraStateErrorCallback,
   }) : detectionTimeoutMs =
            detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
        assert(
@@ -134,6 +137,9 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Android.
   final double? initialZoom;
 
+  /// Detect Camera State Error
+  final CameraStateErrorCallback? cameraStateErrorCallback;
+
   /// The internal barcode controller, that listens for detected barcodes.
   final StreamController<BarcodeCapture> _barcodesController =
       StreamController.broadcast();
@@ -148,6 +154,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   StreamSubscription<TorchState>? _torchStateSubscription;
   StreamSubscription<double>? _zoomScaleSubscription;
   StreamSubscription<DeviceOrientation>? _deviceOrientationSubscription;
+  StreamSubscription<String>? _cameraStateErrorSubscription;
 
   bool _isDisposed = false;
   // This completer keeps track of whether the MobileScanner widget,
@@ -160,11 +167,13 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     unawaited(_torchStateSubscription?.cancel());
     unawaited(_zoomScaleSubscription?.cancel());
     unawaited(_deviceOrientationSubscription?.cancel());
+    unawaited(_cameraStateErrorSubscription?.cancel());
 
     _barcodesSubscription = null;
     _torchStateSubscription = null;
     _zoomScaleSubscription = null;
     _deviceOrientationSubscription = null;
+    _cameraStateErrorSubscription = null;
   }
 
   void _setupListeners() {
@@ -219,6 +228,22 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
             value = value.copyWith(deviceOrientation: orientation);
           });
     }
+
+    _cameraStateErrorSubscription = MobileScannerPlatform
+      .instance.cameraStateErrorStream
+      .listen((String error) {
+      if (_isDisposed) {
+        return;
+      }
+
+      if (error == 'ReceivedFirstFrame') {
+        if (!value.receivedFirstFrame) {
+          value = value.copyWith(receivedFirstFrame: true);
+        }
+      } else {
+        cameraStateErrorCallback?.call(error);
+      }
+    });
   }
 
   void _throwIfNotInitialized() {
